@@ -158,4 +158,52 @@ RSpec.describe "searching", elasticsearch: true do
     expect(search.results.map(&:name)).to match_array(['Bart', 'Marge'])
   end
 
+  it "should prefix via constructor correctly" do
+    search = klass.new(conditions: {name: {values: 'ba', prefix: true}})
+    search.query!
+
+    expect(search.results.map(&:name)).to match_array(['Bart'])
+  end
+
+  it "should prefix via direct assignment correctly" do
+    search = klass.new
+    search.condition(:name).starts_with('ba')
+    search.query!
+
+    expect(search.results.map(&:name)).to match_array(['Bart'])
+  end
+
+  it "should support prefix across multiple values" do
+    search = klass.new
+    search.condition(:name).starts_with(%w(ba li))
+    search.query!
+
+    expect(search.results.map(&:name)).to match_array(['Bart', 'Lisa'])
+  end
+
+  it "should support prefix across multiple values ANDed" do
+    search = klass.new(conditions: {tags: {values: ['funny', 'stupid'], prefix: true, and: true}})
+    search.query!
+
+    expect(search.results.map(&:name)).to match_array(['Bart', 'Homer'])
+  end
+
+  it "should support sorting asc" do
+    search = klass.new(metadata: {sort: [{name: :asc}]})
+    search.query!
+    expect(search.results.map(&:name)).to eq(%w(Bart Homer Lisa Marge))
+  end
+
+  it "should support sorting desc" do
+    search = klass.new(metadata: {sort: [{name: :desc}]})
+    search.query!
+    expect(search.results.map(&:name)).to eq(%w(Marge Lisa Homer Bart))
+  end
+
+  it "should support pagination" do
+    search = klass.new(metadata: {current_page: 2, per_page: 1})
+    search.query!
+    expect(search.results.map(&:name)).to eq(['Homer'])
+  end
+
 end

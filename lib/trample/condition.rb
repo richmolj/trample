@@ -13,7 +13,9 @@ module Trample
         else
           strip_values!(value)
 
-          if has_combinator?(value)
+          if prefix?(value)
+            to_prefix_query(value)
+          elsif has_combinator?(value)
             to_combinator_query(value)
           elsif exclusion?(value)
             to_exclusion_query(value)
@@ -34,6 +36,10 @@ module Trample
       value.has_key?(:and)
     end
 
+    def prefix?(value)
+      value.has_key?(:prefix)
+    end
+
     def exclusion?(value)
       value.has_key?(:not)
     end
@@ -46,6 +52,15 @@ module Trample
       value.has_key?(:from) || value.has_key?(:to)
     end
 
+    def to_prefix_query(value)
+      field = :"#{query_name}.text_start"
+      if has_combinator?(value)
+        to_combinator_query(value, field)
+      else
+        {field => value[:values]}
+      end
+    end
+
     def to_exclusion_query(value)
       if value[:not]
         {query_name => {not: value[:values]}}
@@ -54,11 +69,12 @@ module Trample
       end
     end
 
-    def to_combinator_query(value)
+    def to_combinator_query(value, query_name_override = nil)
+      field = query_name_override || query_name
       if anded?(value)
-        {query_name => {all: value[:values]}}
+        {field => {all: value[:values]}}
       else
-        {query_name => value[:values]}
+        {field => value[:values]}
       end
     end
 

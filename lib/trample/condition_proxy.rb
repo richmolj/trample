@@ -36,6 +36,10 @@ module Trample
       set(value)
     end
 
+    def starts_with(value)
+      set(values: value, prefix: true)
+    end
+
     def set(payload)
       @condition.value = payload
       @search.conditions[@name] = @condition

@@ -37,7 +37,7 @@ module Trample
     end
 
     def backend
-      @backend ||= Backend::Searchkick.new(self.class._model)
+      @backend ||= Backend::Searchkick.new(metadata, self.class._model)
     end
 
     def query!

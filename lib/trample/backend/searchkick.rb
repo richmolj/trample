@@ -4,7 +4,8 @@ module Trample
   module Backend
     class Searchkick
 
-      def initialize(model)
+      def initialize(metadata, model)
+        @metadata = metadata
         @_model = model
       end
 
@@ -13,7 +14,12 @@ module Trample
         conditions.each_pair do |name, condition|
           clauses.merge!(condition.to_query)
         end
-        results = @_model.search where: clauses, load: false
+        results = @_model.search \
+          where: clauses,
+          order: @metadata.sort,
+          page: @metadata.current_page,
+          per_page: @metadata.per_page,
+          load: false
 
         {
           total: results.total_count,
