@@ -17,7 +17,6 @@ RSpec.describe "searching", elasticsearch: true do
     Person.create!(name: 'Marge', tags: ['motherly'], age: 34)
     Person.create!(name: 'Bart', tags: ['funny', 'stupid'], age: 10)
     Person.reindex
-    Person.searchkick_index.refresh
 
     klass.model(Person)
   end
@@ -200,10 +199,46 @@ RSpec.describe "searching", elasticsearch: true do
     expect(search.results.map(&:name)).to eq(%w(Marge Lisa Homer Bart))
   end
 
+  it "should support sorting asc via direct assignment" do
+    search = klass.new.sort(:age)
+    search.query!
+    expect(search.results.map(&:age)).to eq([8, 10, 34, 38])
+  end
+
+  it "should support sorting desc via direct assignment" do
+    search = klass.new.sort('-age')
+    search.query!
+    expect(search.results.map(&:age)).to eq([38, 34, 10, 8])
+  end
+
   it "should support pagination" do
     search = klass.new(metadata: {current_page: 2, per_page: 1})
     search.query!
     expect(search.results.map(&:name)).to eq(['Homer'])
+  end
+
+
+  context "when searching across multiple models" do
+    let(:global_search) do
+      Class.new(Trample::Search) do
+        condition :name
+      end
+    end
+
+    before do
+      global_search.model Person, Animal
+
+      Animal.create!(name: 'MooCow')
+      Animal.create!(name: 'Dog')
+      Animal.reindex
+    end
+
+    it "yields correct results" do
+      search = global_search.new
+      search.condition(:name).starts_with('m')
+      search.query!
+      expect(search.results.map(&:name)).to match_array(%w(Marge MooCow))
+    end
   end
 
 end

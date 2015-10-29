@@ -4,87 +4,106 @@ module Trample
 
     attribute :name, Symbol
     attribute :query_name, Symbol, default: :name
-    attribute :value
+    attribute :values
+    attribute :and, Boolean
+    attribute :not, Boolean
+    attribute :prefix, Boolean
+    attribute :from
+    attribute :to
+
+    def blank?
+      values.blank? && !is_range?
+    end
 
     def to_query
-      if value.is_a?(Hash)
-        if is_range?(value)
-          to_range_query(value)
-        else
-          strip_values!(value)
-
-          if prefix?(value)
-            to_prefix_query(value)
-          elsif has_combinator?(value)
-            to_combinator_query(value)
-          elsif exclusion?(value)
-            to_exclusion_query(value)
-          end
-        end
+      if is_range?
+        to_range_query
       else
-        {query_name => value}
+        strip_values!
+
+        if prefix?
+          to_prefix_query
+        elsif has_combinator?
+          to_combinator_query
+        elsif exclusion?
+          to_exclusion_query
+        else
+          {query_name => values}
+        end
       end
     end
 
     private
 
-    def strip_values!(value)
-      value[:values] = value[:values].first if value[:values].length == 1
+    def strip_values!
+      self.values = values.first if values.is_a?(Array) && values.length == 1
     end
 
-    def has_combinator?(value)
-      value.has_key?(:and)
+    def has_combinator?
+      not attributes[:and].nil?
     end
 
-    def prefix?(value)
-      value.has_key?(:prefix)
+    def prefix?
+      !!prefix
     end
 
-    def exclusion?(value)
-      value.has_key?(:not)
+    def exclusion?
+      not attributes[:not].nil?
     end
 
-    def anded?(value)
-      has_combinator?(value) and !!value[:and]
+    def anded?
+      has_combinator? and !!self.and
     end
 
-    def is_range?(value)
-      value.has_key?(:from) || value.has_key?(:to)
+    def is_range?
+      from? or to?
     end
 
-    def to_prefix_query(value)
+    def not?
+      !!self.not
+    end
+
+    def from?
+      !!self.from
+    end
+
+    def to?
+      !!self.to
+    end
+
+    def to_prefix_query
       field = :"#{query_name}.text_start"
-      if has_combinator?(value)
-        to_combinator_query(value, field)
+      if has_combinator?
+        to_combinator_query(field)
       else
-        {field => value[:values]}
+        {field => values}
       end
     end
 
-    def to_exclusion_query(value)
-      if value[:not]
-        {query_name => {not: value[:values]}}
+    def to_exclusion_query
+      if not?
+        {query_name => {not: values}}
       else
-        {query_name => value[:values]}
+        {query_name => values}
       end
     end
 
-    def to_combinator_query(value, query_name_override = nil)
+    def to_combinator_query(query_name_override = nil)
       field = query_name_override || query_name
-      if anded?(value)
-        {field => {all: value[:values]}}
+      if anded?
+        {field => {all: values}}
       else
-        {field => value[:values]}
+        {field => values}
       end
     end
 
-    def to_range_query(value)
-      if value.has_key?(:from) and !value.has_key?(:to)
-        {query_name => {gte: value[:from]}}
-      elsif value.has_key?(:to) and !value.has_key?(:from)
-        {query_name => {lte: value[:to]}}
+    def to_range_query
+      if from? and !to?
+        {query_name => {gte: from}}
+      elsif to? and !from?
+        {query_name => {lte: to}}
       else
-        {query_name => value[:from]..value[:to]}
+        {query_name => from..to}
       end
     end
 

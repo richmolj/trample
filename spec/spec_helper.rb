@@ -5,6 +5,9 @@ require 'active_record'
 require 'pry'
 require 'pry-byebug'
 
+ENV['HTTP_PROXY'] = nil
+ENV['http_proxy'] = nil
+
 RSpec.configure do |config|
   config.before(:suite) do
     DatabaseCleaner.strategy = :transaction
@@ -29,6 +32,10 @@ ActiveRecord::Schema.define(:version => 1) do
     t.text :tags
     t.integer :age
   end
+
+  create_table :animals do |t|
+    t.string :name
+  end
 end
 
 class Person < ActiveRecord::Base
@@ -36,3 +43,9 @@ class Person < ActiveRecord::Base
 
   serialize :tags
 end
+
+class Animal < ActiveRecord::Base
+  searchkick text_start: [:name]
+end
+
+Searchkick.disable_callbacks

@@ -2,8 +2,11 @@ module Trample
   class ConditionProxy
 
     def initialize(name, search)
-      condition = search.class._conditions[name]
-      @condition = condition.class.new(condition.attributes)
+      condition = search.class._conditions[name.to_sym]
+      raise ConditionNotFoundError.new(search, name) unless condition
+
+      @condition_class = condition.class
+      @condition_config = condition.attributes.dup
       @search = search
       @name = name
     end
@@ -11,14 +14,17 @@ module Trample
     def or(values)
       set(values: values, and: false)
     end
+    alias :in :or
 
     def and(values)
       set(values: values, and: true)
     end
+    alias :all :and
 
     def not(values)
       set(values: values, not: true)
     end
+    alias :not_in :not
 
     def gte(value)
       set(from: value)
@@ -33,7 +39,7 @@ module Trample
     end
 
     def eq(value)
-      set(value)
+      set(values: value)
     end
 
     def starts_with(value)
@@ -41,8 +47,9 @@ module Trample
     end
 
     def set(payload)
-      @condition.value = payload
-      @search.conditions[@name] = @condition
+      payload = {values: payload} unless payload.is_a?(Hash)
+      condition = @condition_class.new(@condition_config.merge(payload))
+      @search.conditions[@name] = condition
       @search
     end
 
