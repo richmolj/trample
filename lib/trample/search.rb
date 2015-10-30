@@ -94,6 +94,7 @@ module Trample
     def aggs=(hash)
       super({})
       hash.each_pair do |name, value|
+        next unless value[:buckets] # rails converting [] to nil
         selections = value[:buckets].select { |b| !!b[:selected] }.map { |b| b[:key] }
         agg(name => selections)
       end

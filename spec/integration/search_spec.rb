@@ -7,6 +7,8 @@ RSpec.describe "searching", elasticsearch: true do
       condition :name
       condition :tags
       condition :age
+
+      condition :simple_name, query_name: 'name', single: true
     end
   end
 
@@ -40,6 +42,22 @@ RSpec.describe "searching", elasticsearch: true do
   it "can query correctly when manually assigning" do
     search = klass.new
     search.condition(:name).eq('Homer')
+    search.query!
+
+    expect(search.results.length).to eq(1)
+  end
+
+  it "supports single-value conditions" do
+    search = klass.new
+    search.condition(:simple_name).eq('Homer')
+    search.query!
+
+    expect(search.results.length).to eq(1)
+    expect(search.conditions.as_json['simple_name']).to eq('Homer')
+  end
+
+  it "supports single-value conditions via constructor" do
+    search = klass.new(conditions: {simple_name: 'Homer'})
     search.query!
 
     expect(search.results.length).to eq(1)

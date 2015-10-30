@@ -11,9 +11,18 @@ module Trample
     attribute :prefix, Boolean
     attribute :from
     attribute :to
+    attribute :single, Boolean, default: false
 
     def blank?
       values.reject { |v| v == "" || v.nil? }.empty? && !is_range?
+    end
+
+    def as_json(*opts)
+      if single?
+        values.first
+      else
+        super
+      end
     end
 
     def runtime_query_name
