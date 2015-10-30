@@ -49,3 +49,4 @@ class Animal < ActiveRecord::Base
 end
 
 Searchkick.disable_callbacks
+#Searchkick.client = Elasticsearch::Client.new(log: true)

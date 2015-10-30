@@ -14,25 +14,39 @@ module Trample
 
     class Bucket
       include Virtus.model
-      attribute :key
-      attribute :label, String
+      attribute :key, String
+      attribute :label, String, default: ->(bucket,attr) { bucket['key'] }
       attribute :count, Integer, default: 0
+      attribute :selected, Boolean, default: false
     end
 
-    attribute :name
-    attribute :label
+    attribute :name, Symbol
+    attribute :label, String
     attribute :buckets, Buckets[Bucket]
 
-    # todo
-    #attribute :condition_name
-    #attribute :selected
-
     def to_query
-      name
+      {name => selections}
+    end
+
+    def selections?
+      !selections.empty?
+    end
+
+    def selections
+      buckets.select(&:selected?).map(&:key)
     end
 
     def force(key, opts = {})
       self.buckets << opts.merge(key: key)
+    end
+
+    def find_or_initialize_bucket(key)
+      bucket = buckets.find { |b| b['key'].downcase == key.downcase }
+      if bucket.nil?
+        bucket = Bucket.new(key: key)
+        self.buckets << bucket
+      end
+      bucket
     end
   end
 end

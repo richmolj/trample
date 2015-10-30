@@ -4,7 +4,8 @@ module Trample
 
     attribute :name, Symbol
     attribute :query_name, Symbol, default: :name
-    attribute :values
+    attribute :values, Array
+    attribute :search_analyzed, Boolean, default: false
     attribute :and, Boolean
     attribute :not, Boolean
     attribute :prefix, Boolean
@@ -15,28 +16,38 @@ module Trample
       values.blank? && !is_range?
     end
 
+    def runtime_query_name
+      name = query_name
+      return "#{name}.text_start" if prefix?
+      return "#{name}.analyzed" if search_analyzed?
+      name
+    end
+
     def to_query
       if is_range?
         to_range_query
       else
-        strip_values!
+        transformed = transformed_values
 
         if prefix?
-          to_prefix_query
+          to_prefix_query(transformed)
         elsif has_combinator?
-          to_combinator_query
+          to_combinator_query(transformed)
         elsif exclusion?
-          to_exclusion_query
+          to_exclusion_query(transformed)
         else
-          {query_name => values}
+          {runtime_query_name => transformed}
         end
       end
     end
 
     private
 
-    def strip_values!
-      self.values = values.first if values.is_a?(Array) && values.length == 1
+    def transformed_values
+      transformed = values.dup
+      transformed.map(&:downcase!) if search_analyzed?
+      transformed = transformed.first if transformed.length == 1
+      transformed
     end
 
     def has_combinator?
@@ -71,39 +82,37 @@ module Trample
       !!self.to
     end
 
-    def to_prefix_query
-      field = :"#{query_name}.text_start"
+    def to_prefix_query(vals)
       if has_combinator?
-        to_combinator_query(field)
+        to_combinator_query(vals)
       else
-        {field => values}
+        {runtime_query_name => vals}
       end
     end
 
-    def to_exclusion_query
+    def to_exclusion_query(vals)
       if not?
-        {query_name => {not: values}}
+        {runtime_query_name => {not: vals}}
       else
-        {query_name => values}
+        {runtime_query_name => vals}
       end
     end
 
-    def to_combinator_query(query_name_override = nil)
-      field = query_name_override || query_name
+    def to_combinator_query(vals, query_name_override = nil)
       if anded?
-        {field => {all: values}}
+        {runtime_query_name => {all: vals}}
       else
-        {field => values}
+        {runtime_query_name => vals}
       end
     end
 
     def to_range_query
       if from? and !to?
-        {query_name => {gte: from}}
+        {runtime_query_name => {gte: from}}
       elsif to? and !from?
-        {query_name => {lte: to}}
+        {runtime_query_name => {lte: to}}
       else
-        {query_name => from..to}
+        {runtime_query_name => from..to}
       end
     end
 

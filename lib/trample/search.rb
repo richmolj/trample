@@ -68,11 +68,33 @@ module Trample
       ConditionProxy.new(name, self)
     end
 
-    def agg(name)
+    def agg(name_or_payload)
+      name = name_or_payload
+      selections = []
+      if name_or_payload.is_a?(Hash)
+        name = name_or_payload.keys.first if name_or_payload.is_a?(Hash)
+        selections = Array(name_or_payload.values.first)
+      end
       template = self.class._aggs[name.to_sym]
       raise AggregationNotDefinedError.new(self, name) unless template
-      self.aggs[name] = Aggregation.new(template.attributes.merge(name: name))
+      agg = aggs[name.to_sym]
+      agg = Aggregation.new(template.attributes.merge(name: name)) if agg.nil?
+
+      selections.each do |key|
+        bucket = agg.find_or_initialize_bucket(key)
+        bucket.selected = true
+      end
+
+      self.aggs[name.to_sym] = agg
       self
+    end
+
+    def aggs=(hash)
+      super({})
+      hash.each_pair do |name, value|
+        selections = value[:buckets].select { |b| !!b[:selected] }.map { |b| b[:key] }
+        agg(name => selections)
+      end
     end
 
     def conditions=(hash)

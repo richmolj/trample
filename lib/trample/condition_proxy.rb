@@ -21,6 +21,10 @@ module Trample
     end
     alias :all :and
 
+    def analyzed(value)
+      set(values: value, search_analyzed: true)
+    end
+
     def not(values)
       set(values: values, not: true)
     end

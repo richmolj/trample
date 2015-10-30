@@ -45,6 +45,21 @@ RSpec.describe "searching", elasticsearch: true do
     expect(search.results.length).to eq(1)
   end
 
+  it "can query analyzed via direct assignment" do
+    search = klass.new
+    search.condition(:name).analyzed('homer')
+    search.query!
+
+    expect(search.results.length).to eq(1)
+  end
+
+  it "can query analyzed via constructor" do
+    search = klass.new(conditions: {name: {values: 'homer', search_analyzed: true}})
+    search.query!
+
+    expect(search.results.length).to eq(1)
+  end
+
   it "queries basic conditions correctly via constructor" do
     search = klass.new(conditions: {name: "Homer"})
     search.query!
@@ -245,7 +260,7 @@ RSpec.describe "searching", elasticsearch: true do
     before do
       klass.aggregation :tags, label: 'Taggings' do |f|
         f.force 'special'
-        f.force 'funny', label: 'The Funnies'
+        f.force 'FUNNY', label: 'The Funnies'
       end
     end
 
@@ -257,7 +272,7 @@ RSpec.describe "searching", elasticsearch: true do
     end
 
     let(:buckets) do
-      agg.buckets.inject({}) { |memo, e| memo.merge(e.key => e.count) }
+      agg.buckets.inject({}) { |memo, e| memo.merge(e.key.downcase => e.count) }
     end
 
     it "should raise an error when the agg is not defined on the class" do
@@ -282,14 +297,87 @@ RSpec.describe "searching", elasticsearch: true do
     end
 
     it "should not duplicate forced buckets that are returned as part of the query" do
-      funny = agg.buckets.select { |b| b.key == 'funny' }
+      funny = agg.buckets.select { |b| b.key.downcase == 'funny' }
       expect(funny.length).to eq(1)
       expect(funny.first.count).to_not be_zero
     end
 
     it "should allow labels on forced buckets" do
-      funny = agg.buckets.find { |b| b.key == 'funny' }
+      funny = agg.buckets.find { |b| b.key.downcase == 'funny' }
       expect(funny.label).to eq('The Funnies')
+    end
+
+    context "when a bucket is selected" do
+      context "via constructor" do
+        let(:search) do
+          search = klass.new aggs: {
+            tags: {
+              buckets: [
+                {key: 'funny'},
+                {key: 'stupid', selected: true},
+                {key: 'smart'},
+                {key: 'motherly', selected: true},
+                {key: 'bald'}
+              ]
+            }
+          }
+          search.query!
+          search
+        end
+
+        it "should filter the search to that selection" do
+          expect(search.results.map(&:name)).to match_array(%w(Homer Bart Marge))
+        end
+      end
+
+      context "via direct assignment" do
+        let(:search) do
+          search = klass.new
+          search.agg(tags: ['stupid', 'motherly']).query!
+          search
+        end
+
+        it "should filter the search to that selection" do
+          expect(search.results.map(&:name)).to match_array(%w(Homer Bart Marge))
+        end
+      end
+
+      context "both direct assignment and constructor for same agg" do
+        let(:search) do
+          search = klass.new aggs: {
+            tags: {
+              buckets: [
+                {key: 'funny'},
+                {key: 'stupid', selected: true},
+                {key: 'smart'},
+                {key: 'motherly', selected: true},
+                {key: 'bald'}
+              ]
+            }
+          }
+          search.agg(:tags)
+          search.query!
+          search
+        end
+
+        it "should not wipe selections" do
+          expect(search.results.map(&:name)).to match_array(%w(Homer Bart Marge))
+        end
+      end
+
+      context "and the corresponding condition is also set" do
+        let(:search) do
+          search = klass.new
+          search.agg(tags: ['stupid'])
+          search.condition(:tags).in(['motherly'])
+          search.query!
+          search
+        end
+
+        it "should use the condition" do
+          expect(search.results.map(&:name)).to match_array(%w(Marge))
+        end
+      end
     end
   end
 

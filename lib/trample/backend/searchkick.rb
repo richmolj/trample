@@ -24,14 +24,18 @@ module Trample
       private
 
       def build_query(conditions, aggs, metadata, models)
-        clauses = build_condition_clauses(conditions)
+        clauses = build_condition_clauses(conditions, aggs)
         query   = searchkick_payload(clauses, metadata, aggs)
         query.merge!(index_name: models.map { |m| m.searchkick_index.name }) if models.length > 1
         query
       end
 
-      def build_condition_clauses(conditions)
+      # N.B. aggs and conditions could hit same key
+      def build_condition_clauses(conditions, aggs)
         {}.tap do |clauses|
+          aggs.each_pair do |name, agg|
+            clauses.merge!(agg.to_query) if agg.selections?
+          end
           conditions.each_pair do |name, condition|
             clauses.merge!(condition.to_query) unless condition.blank?
           end
@@ -44,7 +48,7 @@ module Trample
           order:    metadata.sort,
           page:     metadata.current_page,
           per_page: metadata.per_page,
-          aggs:     aggs.values.map(&:to_query),
+          aggs:     aggs.keys,
           load:     false
         }
       end
@@ -52,13 +56,9 @@ module Trample
       def parse_response_aggs!(response_aggs, search_aggs)
         response_aggs.each_pair do |key, payload|
           agg = search_aggs[key.to_sym]
-          payload['buckets'].each do |bucket|
-            existing = agg.buckets.find { |e| e.key == bucket['key'] }
-            if existing
-              existing.count = bucket['doc_count']
-            else
-              agg.buckets << {count: bucket['doc_count'], key: bucket['key']}
-            end
+          payload['buckets'].each do |response_bucket|
+            bucket = agg.find_or_initialize_bucket(response_bucket['key'])
+            bucket.count = response_bucket['doc_count']
           end
         end
       end
