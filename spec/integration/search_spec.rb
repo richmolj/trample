@@ -67,6 +67,13 @@ RSpec.describe "searching", elasticsearch: true do
     expect(search.results.length).to eq(1)
   end
 
+  it "should reject blank conditions" do
+    search = klass.new(conditions: {name: {values: [""]}})
+    search.query!
+
+    expect(search.results.length).to eq(4)
+  end
+
   it "queries arrays OR'd via constructor correctly" do
     search = klass.new(conditions: {tags: {values: ['funny', 'stupid'], and: false}})
     search.query!

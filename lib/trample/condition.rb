@@ -13,7 +13,7 @@ module Trample
     attribute :to
 
     def blank?
-      values.blank? && !is_range?
+      values.reject { |v| v == "" || v.nil? }.empty? && !is_range?
     end
 
     def runtime_query_name

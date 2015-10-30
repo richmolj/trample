@@ -68,6 +68,7 @@ module Trample
       ConditionProxy.new(name, self)
     end
 
+    # todo refactor...
     def agg(name_or_payload)
       name = name_or_payload
       selections = []
@@ -78,7 +79,8 @@ module Trample
       template = self.class._aggs[name.to_sym]
       raise AggregationNotDefinedError.new(self, name) unless template
       agg = aggs[name.to_sym]
-      agg = Aggregation.new(template.attributes.merge(name: name)) if agg.nil?
+      # N.B. deep dup so buckets don't mutate
+      agg = Aggregation.new(deep_dup(template.attributes).merge(name: name)) if agg.nil?
 
       selections.each do |key|
         bucket = agg.find_or_initialize_bucket(key)
@@ -114,6 +116,12 @@ module Trample
       self.metadata.total = hash[:total]
       self.results = hash[:results]
       self.results
+    end
+
+    private
+
+    def deep_dup(o)
+      Marshal.load(Marshal.dump(o))
     end
 
   end
