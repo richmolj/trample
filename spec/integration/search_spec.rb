@@ -241,4 +241,56 @@ RSpec.describe "searching", elasticsearch: true do
     end
   end
 
+  context "when faceting" do
+    before do
+      klass.aggregation :tags, label: 'Taggings' do |f|
+        f.force 'special'
+        f.force 'funny', label: 'The Funnies'
+      end
+    end
+
+    let(:agg) do
+      search = klass.new
+      search.agg(:tags)
+      search.query!
+      search.aggs[:tags]
+    end
+
+    let(:buckets) do
+      agg.buckets.inject({}) { |memo, e| memo.merge(e.key => e.count) }
+    end
+
+    it "should raise an error when the agg is not defined on the class" do
+      search = klass.new
+      expect { search.agg(:age) }.to raise_error(Trample::AggregationNotDefinedError)
+    end
+
+    it "should assign agg results specified to the search" do
+      expect(buckets['funny']).to eq(3)
+      expect(buckets['stupid']).to eq(2)
+      expect(buckets['smart']).to eq(1)
+      expect(buckets['motherly']).to eq(1)
+      expect(buckets['bald']).to eq(1)
+    end
+
+    it "should assign labels to aggs" do
+      expect(agg.label).to eq('Taggings')
+    end
+
+    it "should add forced buckets to the ags" do
+      expect(buckets['special']).to eq(0)
+    end
+
+    it "should not duplicate forced buckets that are returned as part of the query" do
+      funny = agg.buckets.select { |b| b.key == 'funny' }
+      expect(funny.length).to eq(1)
+      expect(funny.first.count).to_not be_zero
+    end
+
+    it "should allow labels on forced buckets" do
+      funny = agg.buckets.find { |b| b.key == 'funny' }
+      expect(funny.label).to eq('The Funnies')
+    end
+  end
+
 end

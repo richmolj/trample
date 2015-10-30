@@ -1,6 +1,7 @@
 require 'virtus'
 
 require "trample/version"
+require "trample/aggregation"
 require "trample/serializable"
 require "trample/condition"
 require "trample/condition_proxy"

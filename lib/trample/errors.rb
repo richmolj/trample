@@ -11,4 +11,17 @@ module Trample
     end
 
   end
+
+  class AggregationNotDefinedError < StandardError
+
+    def initialize(search, agg_name)
+      @search = search
+      @agg_name = agg_name
+    end
+
+    def message
+      "Could not find facet #{@agg_name} in search #{@search.class}"
+    end
+
+  end
 end

@@ -27,8 +27,8 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency 'virtus', '~> 1.0'
+  spec.add_dependency 'searchkick', '~> 1.0'
 
-  spec.add_development_dependency 'searchkick', '~> 0.9'
   spec.add_development_dependency "activerecord", "~> 4.0"
   spec.add_development_dependency "sqlite3"
   spec.add_development_dependency "database_cleaner"

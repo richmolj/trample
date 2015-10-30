@@ -5,23 +5,32 @@ module Trample
 
     attribute :id, String, default: ->(instance, attr) { SecureRandom.uuid }
     attribute :conditions, Hash[Symbol => Condition], default: ->(search, attr) { {} }
+    attribute :aggs, Hash[Symbol => Aggregation], default: ->(search, attr) { {} }
     attribute :results, Array
     attribute :metadata, Metadata, default: ->(search, attr) { Metadata.new }
 
     class << self
-      attr_accessor :_conditions
+      attr_accessor :_conditions, :_aggs
       attr_reader :_models
     end
     self._conditions = {}
+    self._aggs = {}
 
     def self.inherited(klass)
       super
-      klass._conditions = @_conditions.dup
+      klass._conditions = self._conditions.dup
+      klass._aggs = self._aggs.dup
     end
 
     def self.condition(name, attrs = {})
       attrs.merge!(name: name)
       @_conditions[name] = Condition.new(attrs)
+    end
+
+    def self.aggregation(name, attrs = {})
+      attrs.merge!(name: name)
+      @_aggs[name] = Aggregation.new(attrs)
+      yield @_aggs[name] if block_given?
     end
 
     def self.model(*klasses)
@@ -59,6 +68,13 @@ module Trample
       ConditionProxy.new(name, self)
     end
 
+    def agg(name)
+      template = self.class._aggs[name.to_sym]
+      raise AggregationNotDefinedError.new(self, name) unless template
+      self.aggs[name] = Aggregation.new(template.attributes.merge(name: name))
+      self
+    end
+
     def conditions=(hash)
       super({})
       hash.each_pair do |name, value|
@@ -71,7 +87,7 @@ module Trample
     end
 
     def query!
-      hash = backend.query!(conditions)
+      hash = backend.query!(conditions, aggs)
       self.metadata.took = hash[:took]
       self.metadata.total = hash[:total]
       self.results = hash[:results]
