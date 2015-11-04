@@ -80,7 +80,7 @@ module Trample
       raise AggregationNotDefinedError.new(self, name) unless template
       agg = aggs[name.to_sym]
       # N.B. deep dup so buckets don't mutate
-      agg = Aggregation.new(deep_dup(template.attributes).merge(name: name)) if agg.nil?
+      agg = Aggregation.new(deep_dup(template.attributes).merge(name: name, order: aggs.keys.length)) if agg.nil?
 
       selections.each do |key|
         bucket = agg.find_or_initialize_bucket(key)

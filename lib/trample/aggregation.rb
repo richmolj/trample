@@ -22,6 +22,7 @@ module Trample
 
     attribute :name, Symbol
     attribute :label, String
+    attribute :order, Integer
     attribute :buckets, Buckets[Bucket]
 
     def to_query
