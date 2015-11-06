@@ -31,15 +31,27 @@ module Trample
     alias :not_in :not
 
     def gte(value)
+      set(from_eq: value)
+    end
+
+    def gt(value)
       set(from: value)
     end
 
     def lte(value)
+      set(to_eq: value)
+    end
+
+    def lt(value)
       set(to: value)
     end
 
     def within(range)
       set(from: range.first, to: range.last)
+    end
+
+    def within_eq(range)
+      set(from_eq: range.first, to_eq: range.last)
     end
 
     def eq(value)

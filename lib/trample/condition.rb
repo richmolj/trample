@@ -9,6 +9,8 @@ module Trample
     attribute :and, Boolean
     attribute :not, Boolean
     attribute :prefix, Boolean
+    attribute :from_eq
+    attribute :to_eq
     attribute :from
     attribute :to
     attribute :single, Boolean, default: false
@@ -76,7 +78,7 @@ module Trample
     end
 
     def is_range?
-      from? or to?
+      from_eq? or to_eq? or from? or to?
     end
 
     def not?
@@ -89,6 +91,14 @@ module Trample
 
     def to?
       !!self.to
+    end
+
+    def from_eq?
+      !!self.from_eq
+    end
+
+    def to_eq?
+      !!self.to_eq
     end
 
     def to_prefix_query(vals)
@@ -116,12 +126,22 @@ module Trample
     end
 
     def to_range_query
-      if from? and !to?
-        {runtime_query_name => {gte: from}}
-      elsif to? and !from?
-        {runtime_query_name => {lte: to}}
+      if from_eq? or to_eq?
+        if from_eq? and !to_eq?
+          {runtime_query_name => {gte: from_eq}}
+        elsif to_eq? and !from_eq?
+          {runtime_query_name => {lte: to_eq}}
+        else
+          {runtime_query_name => from_eq..to_eq}
+        end
       else
-        {runtime_query_name => from..to}
+        if from? and !to?
+          {runtime_query_name => {gt: from}}
+        elsif to? and !from?
+          {runtime_query_name => {lt: to}}
+        else
+          {runtime_query_name => {gt: from, lt: to}}
+        end
       end
     end
 

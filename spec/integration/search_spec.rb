@@ -153,7 +153,7 @@ RSpec.describe "searching", elasticsearch: true do
   end
 
   it "queries gte via constructor correctly" do
-    search = klass.new(conditions: {age: {from: 34}})
+    search = klass.new(conditions: {age: {from_eq: 34}})
     search.query!
 
     expect(search.results.map(&:name)).to match_array(['Homer', 'Marge'])
@@ -167,8 +167,23 @@ RSpec.describe "searching", elasticsearch: true do
     expect(search.results.map(&:name)).to match_array(['Homer', 'Marge'])
   end
 
+  it "queries gt via constructor correctly" do
+    search = klass.new(conditions: {age: {from: 34}})
+    search.query!
+
+    expect(search.results.map(&:name)).to match_array(['Homer'])
+  end
+
+  it "queries gt via direct assignment correctly" do
+    search = klass.new
+    search.condition(:age).gt(34)
+    search.query!
+
+    expect(search.results.map(&:name)).to match_array(['Homer'])
+  end
+
   it "queries lte via constructor correctly" do
-    search = klass.new(conditions: {age: {to: 34}})
+    search = klass.new(conditions: {age: {to_eq: 34}})
     search.query!
 
     expect(search.results.map(&:name)).to match_array(['Bart', 'Lisa', 'Marge'])
@@ -182,19 +197,49 @@ RSpec.describe "searching", elasticsearch: true do
     expect(search.results.map(&:name)).to match_array(['Bart', 'Lisa', 'Marge'])
   end
 
-  it "queries WITHIN via constructor correctly" do
+  it "queries lt via constructor correctly" do
+    search = klass.new(conditions: {age: {to: 34}})
+    search.query!
+
+    expect(search.results.map(&:name)).to match_array(['Bart', 'Lisa'])
+  end
+
+  it "queries lt via direct assignment correctly" do
     search = klass.new
-    search.condition(:age).within(10..34)
+    search.condition(:age).lt(34)
+    search.query!
+
+    expect(search.results.map(&:name)).to match_array(['Bart', 'Lisa'])
+  end
+
+  it "queries WITHIN and including via constructor correctly" do
+    search = klass.new
+    search.condition(:age).within_eq(10..34)
     search.query!
 
     expect(search.results.map(&:name)).to match_array(['Bart', 'Marge'])
   end
 
-  it "queries WITHIN via direct assignment correctly" do
-    search = klass.new(conditions: {age: {from: 10, to: 34}})
+  it "queries WITHIN and including via direct assignment correctly" do
+    search = klass.new(conditions: {age: {from_eq: 10, to_eq: 34}})
     search.query!
 
     expect(search.results.map(&:name)).to match_array(['Bart', 'Marge'])
+  end
+
+  it "queries WITHIN via constructor correctly" do
+    search = klass.new
+    search.condition(:age).within(10..38)
+    search.query!
+
+    expect(search.results.map(&:name)).to match_array(['Marge'])
+  end
+
+  it "queries WITHIN via direct assignment correctly" do
+    search = klass.new(conditions: {age: {from: 10, to: 38}})
+    search.query!
+
+    expect(search.results.map(&:name)).to match_array(['Marge'])
   end
 
   it "should prefix via constructor correctly" do
