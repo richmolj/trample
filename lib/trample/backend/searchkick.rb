@@ -11,7 +11,7 @@ module Trample
 
       def query!(conditions, aggs)
         query = build_query(conditions, aggs, @metadata, @_models)
-        results = @_models.first.search(query)
+        results = @_models.first.search(keywords(conditions), query)
         parse_response_aggs!(results.aggs, aggs) if results.response.has_key?('aggregations')
 
         {
@@ -23,9 +23,17 @@ module Trample
 
       private
 
+      def keywords(conditions)
+        if conditions[:keywords] and conditions[:keywords].values.first != ''
+          conditions[:keywords].values.first
+        else
+          '*'
+        end
+      end
+
       def build_query(conditions, aggs, metadata, models)
         clauses = build_condition_clauses(conditions, aggs)
-        query   = searchkick_payload(clauses, metadata, aggs)
+        query   = searchkick_payload(conditions[:keywords], clauses, metadata, aggs)
         query.merge!(index_name: models.map { |m| m.searchkick_index.name }) if models.length > 1
         query
       end
@@ -37,13 +45,14 @@ module Trample
             clauses.merge!(agg.to_query) if agg.selections?
           end
           conditions.each_pair do |name, condition|
+            next if condition.name == :keywords
             clauses.merge!(condition.to_query) unless condition.blank?
           end
         end
       end
 
-      def searchkick_payload(clauses, metadata, aggs)
-        {
+      def searchkick_payload(keywords, clauses, metadata, aggs)
+        payload ={
           where:    clauses,
           order:    metadata.sort,
           page:     metadata.current_page,
@@ -51,6 +60,8 @@ module Trample
           aggs:     aggs.keys,
           load:     false
         }
+        payload[:fields] = keywords.fields if keywords and !keywords.fields.empty?
+        payload
       end
 
       def parse_response_aggs!(response_aggs, search_aggs)

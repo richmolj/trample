@@ -302,6 +302,35 @@ RSpec.describe "searching", elasticsearch: true do
     expect(search.results.map(&:name)).to eq(['Homer'])
   end
 
+  context "when a keywords condition" do
+    it "should support keyword queries" do
+      klass.class_eval do
+        condition :keywords
+      end
+
+      search = klass.new(conditions: {keywords: "homer"})
+      search.query!
+      expect(search.results.map(&:name)).to eq(['Homer'])
+    end
+
+    context "that is limited by fields" do
+      before do
+        klass.class_eval do
+          condition :keywords, fields: [:tags]
+        end
+      end
+
+      it "should limit the keyword query to those fields" do
+        search = klass.new(conditions: {keywords: "homer"})
+        search.query!
+        expect(search.results.length).to eq(0)
+
+        search = klass.new(conditions: {keywords: "bald"})
+        search.query!
+        expect(search.results.map(&:name)).to eq(['Homer'])
+      end
+    end
+  end
 
   context "when searching across multiple models" do
     let(:global_search) do

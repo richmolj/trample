@@ -14,6 +14,12 @@ module Trample
     attribute :from
     attribute :to
     attribute :single, Boolean, default: false
+    attribute :fields, Array
+
+    def initialize(attrs)
+      attrs.merge!(single: true) if attrs[:name] == :keywords
+      super(attrs)
+    end
 
     def blank?
       values.reject { |v| v == "" || v.nil? }.empty? && !is_range?
