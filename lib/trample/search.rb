@@ -119,6 +119,11 @@ module Trample
       self.results
     end
 
+    # Todo only works for single-model search atm
+    def records
+      self.class._models.first.where(id: results.map(&:_id))
+    end
+
     private
 
     def deep_dup(o)
