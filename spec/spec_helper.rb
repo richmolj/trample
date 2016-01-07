@@ -39,7 +39,8 @@ ActiveRecord::Schema.define(:version => 1) do
 end
 
 class Person < ActiveRecord::Base
-  searchkick text_start: [:name, :tags]
+  searchkick text_start: [:name, :tags],
+    text_middle: [:name]
 
   serialize :tags
 end

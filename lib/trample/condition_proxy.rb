@@ -62,6 +62,10 @@ module Trample
       set(values: value, prefix: true)
     end
 
+    def any_text(value)
+      set(values: value, any_text: true)
+    end
+
     def set(payload)
       payload = {values: payload} unless payload.is_a?(Hash)
       condition = @condition_class.new(@condition_config.merge(payload))

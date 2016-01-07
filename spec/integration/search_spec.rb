@@ -272,6 +272,21 @@ RSpec.describe "searching", elasticsearch: true do
     expect(search.results.map(&:name)).to match_array(['Bart', 'Homer'])
   end
 
+  it "should support matching text anywhere in the string" do
+    search = klass.new
+    search.condition(:name).any_text('ar')
+    search.query!
+
+    expect(search.results.map(&:name)).to match_array(['Bart', 'Marge'])
+  end
+
+  it "should support matching text anywhere in the string via constructor" do
+    search = klass.new(conditions: {name: {values: 'ar', any_text: true}})
+    search.query!
+
+    expect(search.results.map(&:name)).to match_array(['Bart', 'Marge'])
+  end
+
   it "should support sorting asc" do
     search = klass.new(metadata: {sort: [{name: :asc}]})
     search.query!
