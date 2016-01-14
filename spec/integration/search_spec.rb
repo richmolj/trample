@@ -376,6 +376,8 @@ RSpec.describe "searching", elasticsearch: true do
         f.force 'special'
         f.force 'FUNNY', label: 'The Funnies'
       end
+
+      klass.aggregation :name
     end
 
     let(:agg) do
@@ -392,6 +394,13 @@ RSpec.describe "searching", elasticsearch: true do
     it "should raise an error when the agg is not defined on the class" do
       search = klass.new
       expect { search.agg(:age) }.to raise_error(Trample::AggregationNotDefinedError)
+    end
+
+    it "should allow multiple aggs to be assigned at once" do
+      search = klass.new
+      search.agg(:tags, :name)
+      search.query!
+      expect(search.aggs.keys).to match_array([:tags, :name])
     end
 
     it "should assign agg results specified to the search" do

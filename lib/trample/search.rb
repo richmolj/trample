@@ -69,25 +69,28 @@ module Trample
     end
 
     # todo refactor...
-    def agg(name_or_payload)
-      name = name_or_payload
-      selections = []
-      if name_or_payload.is_a?(Hash)
-        name = name_or_payload.keys.first if name_or_payload.is_a?(Hash)
-        selections = Array(name_or_payload.values.first)
-      end
-      template = self.class._aggs[name.to_sym]
-      raise AggregationNotDefinedError.new(self, name) unless template
-      agg = aggs[name.to_sym]
-      # N.B. deep dup so buckets don't mutate
-      agg = Aggregation.new(deep_dup(template.attributes).merge(name: name, order: aggs.keys.length)) if agg.nil?
+    def agg(*names_or_payloads)
+      names_or_payloads.each do |name_or_payload|
+        name = name_or_payload
+        selections = []
+        if name_or_payload.is_a?(Hash)
+          name = name_or_payload.keys.first if name_or_payload.is_a?(Hash)
+          selections = Array(name_or_payload.values.first)
+        end
+        template = self.class._aggs[name.to_sym]
+        raise AggregationNotDefinedError.new(self, name) unless template
+        agg = aggs[name.to_sym]
+        # N.B. deep dup so buckets don't mutate
+        agg = Aggregation.new(deep_dup(template.attributes).merge(name: name, order: aggs.keys.length)) if agg.nil?
 
-      selections.each do |key|
-        bucket = agg.find_or_initialize_bucket(key)
-        bucket.selected = true
+        selections.each do |key|
+          bucket = agg.find_or_initialize_bucket(key)
+          bucket.selected = true
+        end
+
+        self.aggs[name.to_sym] = agg
       end
 
-      self.aggs[name.to_sym] = agg
       self
     end
 
