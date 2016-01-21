@@ -30,7 +30,7 @@ module Trample
       if single?
         values.first
       else
-        super
+        {values: values, and: and?}
       end
     end
 
@@ -65,8 +65,17 @@ module Trample
     def transformed_values
       transformed = values.dup
       transformed.map(&:downcase!) if search_analyzed?
+      transformed = pluck_autocomplete_keys(transformed) if has_autocomplete_keys?(transformed)
       transformed = transformed.first if transformed.length == 1
       transformed
+    end
+
+    def pluck_autocomplete_keys(entries)
+      entries.map { |v| v[:key] }
+    end
+
+    def has_autocomplete_keys?(entries)
+      multiple? and entries.any? { |e| e.is_a?(Hash) }
     end
 
     def has_combinator?
@@ -87,6 +96,10 @@ module Trample
 
     def is_range?
       from_eq? or to_eq? or from? or to?
+    end
+
+    def multiple?
+      not single?
     end
 
     def not?
