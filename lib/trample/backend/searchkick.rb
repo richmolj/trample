@@ -55,8 +55,8 @@ module Trample
         payload ={
           where:    clauses,
           order:    metadata.sort,
-          page:     metadata.current_page,
-          per_page: metadata.per_page,
+          page:     metadata.pagination.current_page,
+          per_page: metadata.pagination.per_page,
           aggs:     aggs.keys,
           load:     false
         }

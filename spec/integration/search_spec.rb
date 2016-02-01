@@ -36,7 +36,7 @@ RSpec.describe "searching", elasticsearch: true do
     allow(Person).to receive(:search).and_return(results)
     search = klass.new
     search.query!
-    expect(search.metadata.total).to eq(12)
+    expect(search.metadata.pagination.total).to eq(12)
   end
 
   it "can query correctly when manually assigning" do
@@ -312,7 +312,7 @@ RSpec.describe "searching", elasticsearch: true do
   end
 
   it "should support pagination" do
-    search = klass.new(metadata: {current_page: 2, per_page: 1})
+    search = klass.new(metadata: {pagination: {current_page: 2, per_page: 1}})
     search.query!
     expect(search.results.map(&:name)).to eq(['Homer'])
   end

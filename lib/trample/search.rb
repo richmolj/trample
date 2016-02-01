@@ -44,8 +44,8 @@ module Trample
 
     def paginate(page_params)
       page_params ||= {}
-      metadata.current_page = page_params[:number] if page_params[:number]
-      metadata.per_page = page_params[:size] if page_params[:size]
+      metadata.pagination.current_page = page_params[:number] if page_params[:number]
+      metadata.pagination.per_page = page_params[:size] if page_params[:size]
       self
     end
 
@@ -117,7 +117,7 @@ module Trample
     def query!
       hash = backend.query!(conditions, aggs)
       self.metadata.took = hash[:took]
-      self.metadata.total = hash[:total]
+      self.metadata.pagination.total = hash[:total]
       self.results = hash[:results]
       self.results
     end
