@@ -288,13 +288,13 @@ RSpec.describe "searching", elasticsearch: true do
   end
 
   it "should support sorting asc" do
-    search = klass.new(metadata: {sort: [{name: :asc}]})
+    search = klass.new(metadata: {sort: [{att: 'name', dir: 'asc'}]})
     search.query!
     expect(search.results.map(&:name)).to eq(%w(Bart Homer Lisa Marge))
   end
 
   it "should support sorting desc" do
-    search = klass.new(metadata: {sort: [{name: :desc}]})
+    search = klass.new(metadata: {sort: [{att: 'name', dir: 'desc'}]})
     search.query!
     expect(search.results.map(&:name)).to eq(%w(Marge Lisa Homer Bart))
   end

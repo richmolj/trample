@@ -52,9 +52,9 @@ module Trample
       end
 
       def searchkick_payload(keywords, clauses, metadata, aggs)
-        payload ={
+        payload = {
           where:    clauses,
-          order:    metadata.sort,
+          order:    _sorts(metadata),
           page:     metadata.pagination.current_page,
           per_page: metadata.pagination.per_page,
           aggs:     aggs.keys,
@@ -62,6 +62,12 @@ module Trample
         }
         payload[:fields] = keywords.fields if keywords and !keywords.fields.empty?
         payload
+      end
+
+      def _sorts(metadata)
+        metadata.sort.map do |s|
+          {s.att => s.dir}
+        end
       end
 
       def parse_response_aggs!(response_aggs, search_aggs)

@@ -55,9 +55,9 @@ module Trample
       sorts = fields.map do |f|
         if f.to_s.starts_with?('-')
           f.sub!('-','')
-          {f => :desc}
+          {att: f, dir: :desc}
         else
-          {f => :asc}
+          {att: f, dir: :asc}
         end
       end
       self.metadata.sort = sorts
