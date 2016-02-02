@@ -435,6 +435,10 @@ RSpec.describe "searching", elasticsearch: true do
       expect(buckets['special']).to eq(0)
     end
 
+    it "should force buckets alphabetically by default" do
+      expect(agg.buckets.map(&:key)).to eq(%w(bald FUNNY motherly smart special stupid))
+    end
+
     it "should not duplicate forced buckets that are returned as part of the query" do
       funny = agg.buckets.select { |b| b.key.downcase == 'funny' }
       expect(funny.length).to eq(1)
@@ -444,6 +448,28 @@ RSpec.describe "searching", elasticsearch: true do
     it "should allow labels on forced buckets" do
       funny = agg.buckets.find { |b| b.key.downcase == 'funny' }
       expect(funny.label).to eq('The Funnies')
+    end
+
+    context "when given a special bucket sort" do
+      it "should honor procs" do
+        klass.aggregation :tags, label: 'Taggings' do |f|
+          f.bucket_sort = proc { |a, b| a.key == 'special' ? -1 : 1 }
+          f.force 'special'
+          f.force 'FUNNY', label: 'The Funnies'
+        end
+
+        expect(agg.buckets.map(&:key)[0]).to eq('special')
+      end
+
+      it "should honor :count, sorting secondarily by alpha" do
+        klass.aggregation :tags, label: 'Taggings' do |f|
+          f.bucket_sort = :count
+          f.force 'special'
+          f.force 'FUNNY', label: 'The Funnies'
+        end
+
+        expect(agg.buckets.map(&:key)).to eq(%w(FUNNY stupid bald motherly smart special))
+      end
     end
 
     context "when a bucket is selected" do

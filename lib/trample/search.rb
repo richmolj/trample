@@ -29,6 +29,7 @@ module Trample
 
     def self.aggregation(name, attrs = {})
       attrs.merge!(name: name)
+      attrs[:order] = @_aggs.keys.length
       @_aggs[name] = Aggregation.new(attrs)
       yield @_aggs[name] if block_given?
     end
@@ -83,7 +84,8 @@ module Trample
 
         if agg.nil?
           # N.B. deep dup so buckets don't mutate
-          agg = Aggregation.new(deep_dup(template.attributes).merge(name: name, order: aggregations.length))
+          agg = Aggregation.new(deep_dup(template.attributes).merge(name: name.to_sym))
+          agg.bucket_sort = template.bucket_sort
           self.aggregations << agg
         end
 
@@ -96,13 +98,21 @@ module Trample
       self
     end
 
+    # N.B rails may send nil here instead of empty array
     def aggregations=(aggregation_array)
-      super({})
+      aggregation_array ||= []
+      super([])
+
       aggregation_array.each do |aggregation_hash|
         next unless aggregation_hash[:buckets] # rails converting [] to nil
         selections = aggregation_hash[:buckets].select { |b| !!b[:selected] }.map { |b| b[:key] }
         agg(aggregation_hash[:name].to_sym => selections)
       end
+    end
+
+    def aggregations
+      @aggregations.sort! { |a, b| a.order <=> b.order }
+      @aggregations
     end
 
     def conditions=(hash)
