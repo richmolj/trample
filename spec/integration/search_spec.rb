@@ -419,6 +419,18 @@ RSpec.describe "searching", elasticsearch: true do
       expect(search.aggregations.map(&:name)).to match_array([:tags, :name])
     end
 
+    it "should allow agg assignment via constructor (nil buckets)" do
+      search = klass.new(aggregations: [{name: 'tags', buckets: nil}])
+      search.query!
+      expect(search.aggregations.map(&:name)).to match_array([:tags])
+    end
+
+    it "should allow agg assignment via constructor (empty buckets)" do
+      search = klass.new(aggregations: [{name: 'tags', buckets: []}])
+      search.query!
+      expect(search.aggregations.map(&:name)).to match_array([:tags])
+    end
+
     it "should assign agg results specified to the search" do
       expect(buckets['funny']).to eq(3)
       expect(buckets['stupid']).to eq(2)

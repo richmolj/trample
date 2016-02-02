@@ -104,9 +104,12 @@ module Trample
       super([])
 
       aggregation_array.each do |aggregation_hash|
-        next unless aggregation_hash[:buckets] # rails converting [] to nil
-        selections = aggregation_hash[:buckets].select { |b| !!b[:selected] }.map { |b| b[:key] }
-        agg(aggregation_hash[:name].to_sym => selections)
+        if aggregation_hash[:buckets] # rails converting [] to nil
+          selections = aggregation_hash[:buckets].select { |b| !!b[:selected] }.map { |b| b[:key] }
+          agg(aggregation_hash[:name].to_sym => selections)
+        else
+          agg(aggregation_hash[:name].to_sym => [])
+        end
       end
     end
 
