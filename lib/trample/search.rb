@@ -5,7 +5,7 @@ module Trample
 
     attribute :id, String, default: ->(instance, attr) { SecureRandom.uuid }
     attribute :conditions, Hash[Symbol => Condition], default: ->(search, attr) { {} }
-    attribute :aggs, Array[Aggregation], default: ->(search, attr) { {} }
+    attribute :aggregations, Array[Aggregation], default: ->(search, attr) { {} }
     attribute :results, Array
     attribute :metadata, Metadata, default: ->(search, attr) { Metadata.new }
 
@@ -79,12 +79,12 @@ module Trample
         end
         template = self.class._aggs[name.to_sym]
         raise AggregationNotDefinedError.new(self, name) unless template
-        agg = self.aggs.find { |a| a.name.to_sym == name.to_sym }
+        agg = self.aggregations.find { |a| a.name.to_sym == name.to_sym }
 
         if agg.nil?
           # N.B. deep dup so buckets don't mutate
-          agg = Aggregation.new(deep_dup(template.attributes).merge(name: name, order: aggs.length))
-          self.aggs << agg
+          agg = Aggregation.new(deep_dup(template.attributes).merge(name: name, order: aggregations.length))
+          self.aggregations << agg
         end
 
         selections.each do |key|
@@ -96,7 +96,7 @@ module Trample
       self
     end
 
-    def aggs=(aggregation_array)
+    def aggregations=(aggregation_array)
       super({})
       aggregation_array.each do |aggregation_hash|
         next unless aggregation_hash[:buckets] # rails converting [] to nil
@@ -117,7 +117,7 @@ module Trample
     end
 
     def query!
-      hash = backend.query!(conditions, aggs)
+      hash = backend.query!(conditions, aggregations)
       self.metadata.took = hash[:took]
       self.metadata.pagination.total = hash[:total]
       self.results = hash[:results]

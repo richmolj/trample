@@ -9,10 +9,10 @@ module Trample
         @_models = models
       end
 
-      def query!(conditions, aggs)
-        query = build_query(conditions, aggs, @metadata, @_models)
+      def query!(conditions, aggregations)
+        query = build_query(conditions, aggregations, @metadata, @_models)
         results = @_models.first.search(keywords(conditions), query)
-        parse_response_aggs!(results.aggs, aggs) if results.response.has_key?('aggregations')
+        parse_response_aggs!(results.aggs, aggregations) if results.response.has_key?('aggregations')
 
         {
           total:   results.total_count,
@@ -31,17 +31,17 @@ module Trample
         end
       end
 
-      def build_query(conditions, aggs, metadata, models)
-        clauses = build_condition_clauses(conditions, aggs)
-        query   = searchkick_payload(conditions[:keywords], clauses, metadata, aggs)
+      def build_query(conditions, aggregations, metadata, models)
+        clauses = build_condition_clauses(conditions, aggregations)
+        query   = searchkick_payload(conditions[:keywords], clauses, metadata, aggregations)
         query.merge!(index_name: models.map { |m| m.searchkick_index.name }) if models.length > 1
         query
       end
 
       # N.B. aggs and conditions could hit same key
-      def build_condition_clauses(conditions, aggs)
+      def build_condition_clauses(conditions, aggregations)
         {}.tap do |clauses|
-          aggs.each do |agg|
+          aggregations.each do |agg|
             clauses.merge!(agg.to_query) if agg.selections?
           end
           conditions.each_pair do |name, condition|

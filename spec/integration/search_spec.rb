@@ -400,7 +400,7 @@ RSpec.describe "searching", elasticsearch: true do
       search = klass.new
       search.agg(:tags)
       search.query!
-      search.aggs.find { |a| a.name == :tags }
+      search.aggregations.find { |a| a.name == :tags }
     end
 
     let(:buckets) do
@@ -416,7 +416,7 @@ RSpec.describe "searching", elasticsearch: true do
       search = klass.new
       search.agg(:tags, :name)
       search.query!
-      expect(search.aggs.map(&:name)).to match_array([:tags, :name])
+      expect(search.aggregations.map(&:name)).to match_array([:tags, :name])
     end
 
     it "should assign agg results specified to the search" do
@@ -449,7 +449,7 @@ RSpec.describe "searching", elasticsearch: true do
     context "when a bucket is selected" do
       context "via constructor" do
         let(:search) do
-          search = klass.new aggs: [{
+          search = klass.new aggregations: [{
             name: 'tags',
             buckets: [
               {key: 'funny'},
@@ -482,7 +482,7 @@ RSpec.describe "searching", elasticsearch: true do
 
       context "both direct assignment and constructor for same agg" do
         let(:search) do
-          search = klass.new aggs: [
+          search = klass.new aggregations: [
             {
               name: 'tags',
               buckets: [
