@@ -50,4 +50,11 @@ class Animal < ActiveRecord::Base
 end
 
 Searchkick.disable_callbacks
-#Searchkick.client = Elasticsearch::Client.new(log: true)
+
+# Avoid hitting same port as probably used for development.
+config = {
+  hosts: [{host: 'localhost', port: 9250}],
+  log: false
+}
+
+Searchkick.client = Elasticsearch::Client.new(config)

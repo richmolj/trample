@@ -400,7 +400,7 @@ RSpec.describe "searching", elasticsearch: true do
       search = klass.new
       search.agg(:tags)
       search.query!
-      search.aggs[:tags]
+      search.aggs.find { |a| a.name == :tags }
     end
 
     let(:buckets) do
@@ -416,7 +416,7 @@ RSpec.describe "searching", elasticsearch: true do
       search = klass.new
       search.agg(:tags, :name)
       search.query!
-      expect(search.aggs.keys).to match_array([:tags, :name])
+      expect(search.aggs.map(&:name)).to match_array([:tags, :name])
     end
 
     it "should assign agg results specified to the search" do
@@ -449,17 +449,16 @@ RSpec.describe "searching", elasticsearch: true do
     context "when a bucket is selected" do
       context "via constructor" do
         let(:search) do
-          search = klass.new aggs: {
-            tags: {
-              buckets: [
-                {key: 'funny'},
-                {key: 'stupid', selected: true},
-                {key: 'smart'},
-                {key: 'motherly', selected: true},
-                {key: 'bald'}
-              ]
-            }
-          }
+          search = klass.new aggs: [{
+            name: 'tags',
+            buckets: [
+              {key: 'funny'},
+              {key: 'stupid', selected: true},
+              {key: 'smart'},
+              {key: 'motherly', selected: true},
+              {key: 'bald'}
+            ]
+          }]
           search.query!
           search
         end
@@ -483,8 +482,9 @@ RSpec.describe "searching", elasticsearch: true do
 
       context "both direct assignment and constructor for same agg" do
         let(:search) do
-          search = klass.new aggs: {
-            tags: {
+          search = klass.new aggs: [
+            {
+              name: 'tags',
               buckets: [
                 {key: 'funny'},
                 {key: 'stupid', selected: true},
@@ -493,7 +493,7 @@ RSpec.describe "searching", elasticsearch: true do
                 {key: 'bald'}
               ]
             }
-          }
+          ]
           search.agg(:tags)
           search.query!
           search

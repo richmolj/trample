@@ -41,7 +41,7 @@ module Trample
       # N.B. aggs and conditions could hit same key
       def build_condition_clauses(conditions, aggs)
         {}.tap do |clauses|
-          aggs.each_pair do |name, agg|
+          aggs.each do |agg|
             clauses.merge!(agg.to_query) if agg.selections?
           end
           conditions.each_pair do |name, condition|
@@ -57,7 +57,7 @@ module Trample
           order:    _sorts(metadata),
           page:     metadata.pagination.current_page,
           per_page: metadata.pagination.per_page,
-          aggs:     aggs.keys,
+          aggs:     aggs.map(&:name),
           load:     false
         }
         payload[:fields] = keywords.fields if keywords and !keywords.fields.empty?
@@ -72,7 +72,7 @@ module Trample
 
       def parse_response_aggs!(response_aggs, search_aggs)
         response_aggs.each_pair do |key, payload|
-          agg = search_aggs[key.to_sym]
+          agg = search_aggs.find { |a| a.name.to_sym == key.to_sym }
           payload['buckets'].each do |response_bucket|
             bucket = agg.find_or_initialize_bucket(response_bucket['key'])
             bucket.count = response_bucket['doc_count']

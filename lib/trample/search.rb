@@ -5,7 +5,7 @@ module Trample
 
     attribute :id, String, default: ->(instance, attr) { SecureRandom.uuid }
     attribute :conditions, Hash[Symbol => Condition], default: ->(search, attr) { {} }
-    attribute :aggs, Hash[Symbol => Aggregation], default: ->(search, attr) { {} }
+    attribute :aggs, Array[Aggregation], default: ->(search, attr) { {} }
     attribute :results, Array
     attribute :metadata, Metadata, default: ->(search, attr) { Metadata.new }
 
@@ -79,27 +79,29 @@ module Trample
         end
         template = self.class._aggs[name.to_sym]
         raise AggregationNotDefinedError.new(self, name) unless template
-        agg = aggs[name.to_sym]
-        # N.B. deep dup so buckets don't mutate
-        agg = Aggregation.new(deep_dup(template.attributes).merge(name: name, order: aggs.keys.length)) if agg.nil?
+        agg = self.aggs.find { |a| a.name.to_sym == name.to_sym }
+
+        if agg.nil?
+          # N.B. deep dup so buckets don't mutate
+          agg = Aggregation.new(deep_dup(template.attributes).merge(name: name, order: aggs.length))
+          self.aggs << agg
+        end
 
         selections.each do |key|
           bucket = agg.find_or_initialize_bucket(key)
           bucket.selected = true
         end
-
-        self.aggs[name.to_sym] = agg
       end
 
       self
     end
 
-    def aggs=(hash)
+    def aggs=(aggregation_array)
       super({})
-      hash.each_pair do |name, value|
-        next unless value[:buckets] # rails converting [] to nil
-        selections = value[:buckets].select { |b| !!b[:selected] }.map { |b| b[:key] }
-        agg(name => selections)
+      aggregation_array.each do |aggregation_hash|
+        next unless aggregation_hash[:buckets] # rails converting [] to nil
+        selections = aggregation_hash[:buckets].select { |b| !!b[:selected] }.map { |b| b[:key] }
+        agg(aggregation_hash[:name].to_sym => selections)
       end
     end
 
