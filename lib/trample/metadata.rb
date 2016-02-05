@@ -1,6 +1,7 @@
 module Trample
   class Metadata
     include Virtus.model
+    extend Forwardable
 
     class Pagination
       include Virtus.model
@@ -20,6 +21,10 @@ module Trample
     attribute :pagination, Pagination, default: ->(_,_) { Pagination.new }
     attribute :took, Integer
     attribute :sort, Array[Sort]
+
+    def_delegators :pagination, :total, :current_page, :per_page
+    def_delegator :sort, :att, :sort_att
+    def_delegator :sort, :dir, :sort_dir
 
     def total_pages
       (total.to_f / per_page.to_f).ceil
