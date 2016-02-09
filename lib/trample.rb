@@ -10,6 +10,9 @@ require "trample/search"
 require "trample/backend/searchkick"
 require "trample/results"
 require "trample/errors"
+
+require "trample/autocomplete/formatter"
+
 require "trample/railtie" if defined?(Rails)
 
 module Trample
