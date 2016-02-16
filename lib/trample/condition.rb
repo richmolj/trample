@@ -47,7 +47,7 @@ module Trample
       if is_range?
         to_range_query
       else
-        _values      = values.dup
+        _values      = values.dup.map(&:dup)
         user_queries = _values.select(&is_user_query)
         transformed  = transform_values(_values - user_queries)
 

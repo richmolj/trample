@@ -356,6 +356,17 @@ RSpec.describe "searching", elasticsearch: true do
         expect(search.results.map(&:name)).to match_array(['Homer', 'Bart'])
       end
 
+      # tests dup logic, these conditions should not mutate
+      it "should be able to query twice correctly" do
+        search = klass.new conditions: conditions
+        search.query!
+
+        expect(search.results.map(&:name)).to match_array(['Homer', 'Bart'])
+
+        search.query!
+        expect(search.results.map(&:name)).to match_array(['Homer', 'Bart'])
+      end
+
       it "should not conflict with corresponding condition set manually" do
         conditions.merge!({
           _name_prefix: {
