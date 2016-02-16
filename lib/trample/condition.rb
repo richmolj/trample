@@ -16,6 +16,7 @@ module Trample
     attribute :to
     attribute :single, Boolean, default: false
     attribute :fields, Array
+    attribute :user_query, Hash
 
     def initialize(attrs)
       attrs.merge!(single: true) if attrs[:name] == :keywords
@@ -46,28 +47,64 @@ module Trample
       if is_range?
         to_range_query
       else
-        transformed = transformed_values
+        _values      = values.dup
+        user_queries = _values.select(&is_user_query)
+        transformed  = transform_values(_values - user_queries)
 
-        if prefix?
-          to_prefix_query(transformed)
-        elsif has_combinator?
-          to_combinator_query(transformed)
-        elsif exclusion?
-          to_exclusion_query(transformed)
+        user_query_clause = derive_user_query_clause(user_queries)
+        main_clause = derive_main_clause(transformed)
+
+        if user_query_clause.present?
+          {or: [[ main_clause, user_query_clause ]] }
         else
-          {runtime_query_name => transformed}
+          main_clause
         end
       end
     end
 
     private
 
-    def transformed_values
-      transformed = values.dup
-      transformed.map(&:downcase!) if search_analyzed?
-      transformed = pluck_autocomplete_keys(transformed) if has_autocomplete_keys?(transformed)
-      transformed = transformed.first if transformed.length == 1
-      transformed
+    def transform_values(entries)
+      entries = pluck_autocomplete_keys(entries) if has_autocomplete_keys?(entries)
+      entries.map(&:downcase!) if search_analyzed?
+      entries = entries.first if entries.length == 1
+      entries
+    end
+
+    def derive_user_query_clause(user_queries)
+      if user_queries.length > 0
+        user_queries.each { |q| q.delete(:user_query) }
+        condition = Condition.new(user_query.merge(values: user_queries))
+        condition.to_query
+      else
+        {}
+      end
+    end
+
+    def derive_main_clause(transformed)
+      if prefix?
+        to_prefix_query(transformed)
+      elsif has_combinator?
+        to_combinator_query(transformed)
+      elsif exclusion?
+        to_exclusion_query(transformed)
+      else
+        {runtime_query_name => transformed}
+      end
+    end
+
+    def pluck_user_query_values!(values)
+      user_queries = values.select(&is_user_query)
+      values.reject!(&is_user_query)
+      [values, user_queries]
+    end
+
+    def has_user_queries?(entries)
+      entries.any?(&is_user_query)
+    end
+
+    def is_user_query
+      ->(entry) { entry.is_a?(Hash) and !!entry[:user_query] }
     end
 
     def pluck_autocomplete_keys(entries)

@@ -10,10 +10,16 @@ module Trample
         end
       end
 
-      def format_all(results)
-        results.map do |r|
+      def format_all(results, options = {})
+        results = results.map do |r|
           format_one(r)
         end
+
+        if user_query = options[:user_query]
+          results.unshift(Hashie::Mash.new(id: user_query, key: user_query, text: "\"#{user_query}\"", user_query: true))
+        end
+
+        results
       end
 
       def format_one(result)

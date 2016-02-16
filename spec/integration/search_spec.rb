@@ -4,9 +4,12 @@ RSpec.describe "searching", elasticsearch: true do
 
   let(:klass) do
     Class.new(Trample::Search) do
+      condition :id, user_query: {query_name: :name, prefix: true}
       condition :name
       condition :tags
       condition :age
+
+      condition :_name_prefix, query_name: :name, prefix: true
 
       condition :simple_name, query_name: 'name', single: true
     end
@@ -330,6 +333,42 @@ RSpec.describe "searching", elasticsearch: true do
       search.query!
 
       expect(search.results.map(&:name)).to eq(['Homer'])
+    end
+
+    context "when a user query" do
+      let(:conditions) do
+        bart = Person.find_by(name: 'Bart')
+
+        {
+          id: {
+            values: [
+              {id: 'hom', key: 'hom', text: 'hom', user_query: true},
+              {id: bart.id, key: bart.id, text: 'Bart'}
+            ]
+          }
+        }
+      end
+
+      it "should query the corresponding condition in addition to the autocomplete" do
+        search = klass.new conditions: conditions
+        search.query!
+
+        expect(search.results.map(&:name)).to match_array(['Homer', 'Bart'])
+      end
+
+      it "should not conflict with corresponding condition set manually" do
+        conditions.merge!({
+          _name_prefix: {
+            values: [{id: 'ba', key: 'ba', text: 'ba'}]
+          }
+        })
+
+        search = klass.new conditions: conditions
+        search.query!
+
+        # Just Bart since these are ANDed
+        expect(search.results.map(&:name)).to match_array(['Bart'])
+      end
     end
   end
 
