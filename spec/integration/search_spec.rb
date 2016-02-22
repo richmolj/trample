@@ -215,6 +215,15 @@ RSpec.describe "searching", elasticsearch: true do
     expect(search.results.map(&:name)).to match_array(['Bart', 'Lisa'])
   end
 
+  it "can query with two separate ranges on the same condition" do
+    search = klass.new
+    search.condition(:age).gt(8)
+    search.condition(:age).lte(34)
+    search.query!
+
+    expect(search.results.map(&:name)).to match_array(['Bart', 'Marge'])
+  end
+
   it "queries WITHIN and including via constructor correctly" do
     search = klass.new
     search.condition(:age).within_eq(10..34)

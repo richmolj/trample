@@ -184,23 +184,13 @@ module Trample
     end
 
     def to_range_query
-      if from_eq? or to_eq?
-        if from_eq? and !to_eq?
-          {runtime_query_name => {gte: from_eq}}
-        elsif to_eq? and !from_eq?
-          {runtime_query_name => {lte: to_eq}}
-        else
-          {runtime_query_name => from_eq..to_eq}
-        end
-      else
-        if from? and !to?
-          {runtime_query_name => {gt: from}}
-        elsif to? and !from?
-          {runtime_query_name => {lt: to}}
-        else
-          {runtime_query_name => {gt: from, lt: to}}
-        end
-      end
+      hash = {}
+      hash.merge!(gte: from_eq) if from_eq?
+      hash.merge!(gt: from) if from?
+      hash.merge!(lte: to_eq) if to_eq?
+      hash.merge!(lt: to) if to?
+
+      {runtime_query_name => hash}
     end
 
   end

@@ -31,19 +31,19 @@ module Trample
     alias :not_in :not
 
     def gte(value)
-      set(from_eq: value)
+      merge(from_eq: value)
     end
 
     def gt(value)
-      set(from: value)
+      merge(from: value)
     end
 
     def lte(value)
-      set(to_eq: value)
+      merge(to_eq: value)
     end
 
     def lt(value)
-      set(to: value)
+      merge(to: value)
     end
 
     def within(range)
@@ -71,6 +71,16 @@ module Trample
       condition = @condition_class.new(@condition_config.merge(payload))
       @search.conditions[@name] = condition
       @search
+    end
+
+    private
+
+    def merge(payload)
+      existing = @search.conditions[@name]
+      existing_attrs = {}
+      existing_attrs = existing.attributes if existing
+      merged = existing_attrs.merge(payload)
+      set(merged)
     end
 
   end
