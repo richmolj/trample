@@ -1,41 +1,68 @@
 # Trample
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/trample`. To experiment with that code, run `bin/console` for an interactive prompt.
+Additional querying sugar for [searchkick](https://github.com/ankane/searchkick).
 
-TODO: Delete this and the text above, and describe your gem
+## Quickstart
 
-## Installation
-
-Add this line to your application's Gemfile:
+Given a searchkick-enabled model:
 
 ```ruby
-gem 'trample'
+class Person < ActiveRecord::Base
+  searchkick text_start: [:name]
+
+  belongs_to :company
+
+  def search_data
+    data = attributes
+    data[:company_name] = company.name
+    data
+  end
+end
 ```
 
-And then execute:
+Write a Search class:
 
-    $ bundle
+```ruby
+class PeopleSearch < Trample::Search
+  condition :name
+  condition :nickname, single: true
 
-Or install it yourself as:
+  aggregation :company_name
 
-    $ gem install trample
+  model Person
+end
+```
 
-## Usage
+Given a trample-compatible request payload, via something like
+[ember-cli-advanced-search](https://github.com/richmolj/ember-cli-advanced-search), add a controller endpoint:
 
-TODO: Write usage instructions here
+```ruby
+class PeopleSearchController < ApplicationController
 
-## Development
+  def new
+    search = PeopleSearch.new
+    search.agg(*params[:aggregations]) if params[:aggregations]
+    render json: search
+  end
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+  def update
+    search = PeopleSearch.new(params["people_search"])
+    search.query!
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+    render json: search, include: :results
+  end
 
-## Contributing
+end
+```
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/trample.
+Or query directly:
 
+```ruby
+search = PeopleSearch.new
+search.condition(:name).starts_with('joh')
+search.condition(:ag).gt(20)
+search.condition(:company_name).or(%w(google apple))
+search.query!
 
-## License
-
-The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
-
+search.results
+```
