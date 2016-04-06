@@ -9,6 +9,8 @@ RSpec.describe "searching", elasticsearch: true do
       condition :tags
       condition :age
 
+      condition :tag_ids, user_query: {query_name: :tags, prefix: true}
+
       condition :_name_prefix, query_name: :name, prefix: true
 
       condition :simple_name, query_name: 'name', single: true
@@ -18,9 +20,9 @@ RSpec.describe "searching", elasticsearch: true do
   before do
     Searchkick.client.indices.delete index: '_all'
     Person.create!(name: 'Homer', tags: ['funny', 'stupid', 'bald'], age: 38)
-    Person.create!(name: 'Lisa', tags: ['funny', 'smart'], age: 8)
+    Person.create!(name: 'Lisa', tags: ['funny', 'smart', 'kid'], age: 8)
     Person.create!(name: 'Marge', tags: ['motherly'], age: 34)
-    Person.create!(name: 'Bart', tags: ['funny', 'stupid'], age: 10)
+    Person.create!(name: 'Bart', tags: ['funny', 'stupid', 'kid'], age: 10)
     Person.reindex
 
     klass.model(Person)
@@ -392,6 +394,20 @@ RSpec.describe "searching", elasticsearch: true do
         # Just Bart since these are ANDed
         expect(search.results.map(&:name)).to match_array(['Bart'])
       end
+
+      context "and there are multiple user queries" do
+        before do
+          conditions[:tag_ids] = {
+            values: [{ id: 'kid', key: 'kid', text: '"kid"', user_query: true }]
+          }
+        end
+
+        it "should AND the clauses and query correctly" do
+          search = klass.new conditions: conditions
+          search.query!
+          expect(search.results.map(&:name)).to match_array(['Bart'])
+        end
+      end
     end
   end
 
@@ -510,7 +526,7 @@ RSpec.describe "searching", elasticsearch: true do
     end
 
     it "should force buckets alphabetically by default" do
-      expect(agg.buckets.map(&:key)).to eq(%w(bald FUNNY motherly smart special stupid))
+      expect(agg.buckets.map(&:key)).to eq(%w(bald FUNNY kid motherly smart special stupid))
     end
 
     it "should not duplicate forced buckets that are returned as part of the query" do
@@ -542,7 +558,7 @@ RSpec.describe "searching", elasticsearch: true do
           f.force 'FUNNY', label: 'The Funnies'
         end
 
-        expect(agg.buckets.map(&:key)).to eq(%w(FUNNY stupid bald motherly smart special))
+        expect(agg.buckets.map(&:key)).to eq(%w(FUNNY kid stupid bald motherly smart special))
       end
     end
 

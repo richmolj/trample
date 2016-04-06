@@ -55,7 +55,7 @@ module Trample
         main_clause = derive_main_clause(transformed)
 
         if user_query_clause.present?
-          {or: [[ main_clause, user_query_clause ]] }
+          { or: [ main_clause, user_query_clause ] }
         else
           main_clause
         end

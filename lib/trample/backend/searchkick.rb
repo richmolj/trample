@@ -46,8 +46,17 @@ module Trample
           end
           conditions.each_pair do |name, condition|
             next if condition.name == :keywords
-            clauses.merge!(condition.to_query) unless condition.blank?
+            merge_clause(clauses, condition.to_query) unless condition.blank?
           end
+        end
+      end
+
+      def merge_clause(clauses, clause)
+        if clause[:or]
+          clauses[:or] ||= []
+          clauses[:or] << clause[:or]
+        else
+          clauses.merge!(clause)
         end
       end
 
