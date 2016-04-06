@@ -324,9 +324,12 @@ RSpec.describe "searching", elasticsearch: true do
   end
 
   it "should support pagination" do
+    search = klass.new(metadata: {pagination: {current_page: 1, per_page: 4}})
+    search.query!
+    expected_name = search.results[1].name
     search = klass.new(metadata: {pagination: {current_page: 2, per_page: 1}})
     search.query!
-    expect(search.results.map(&:name)).to eq(['Homer'])
+    expect(search.results.map(&:name)).to eq([expected_name])
   end
 
   context "when an autocomplete condition" do
