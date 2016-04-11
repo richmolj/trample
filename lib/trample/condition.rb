@@ -15,6 +15,7 @@ module Trample
     attribute :from
     attribute :to
     attribute :single, Boolean, default: false
+    attribute :range, Boolean, default: false
     attribute :fields, Array
     attribute :user_query, Hash
 
@@ -24,14 +25,21 @@ module Trample
     end
 
     def blank?
-      values.reject { |v| v == "" || v.nil? }.empty? && !is_range?
+      values.reject { |v| v == "" || v.nil? }.empty? && !range?
     end
 
     def as_json(*opts)
       if single?
         values.first
+      elsif range?
+        {}.tap do |json|
+          json[:from_eq] = from_eq if from_eq?
+          json[:from]    = from if from?
+          json[:to_eq]   = to_eq if to_eq?
+          json[:to]      = to if to?
+        end
       else
-        {values: values, and: and?}
+        { values: values, and: and? }
       end
     end
 
@@ -44,7 +52,7 @@ module Trample
     end
 
     def to_query
-      if is_range?
+      if range?
         to_range_query
       else
         _values      = values.dup.map { |v| v.is_a?(Hash) ? v.dup : v }
@@ -129,10 +137,6 @@ module Trample
 
     def anded?
       has_combinator? and !!self.and
-    end
-
-    def is_range?
-      from_eq? or to_eq? or from? or to?
     end
 
     def multiple?

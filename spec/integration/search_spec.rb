@@ -7,7 +7,7 @@ RSpec.describe "searching", elasticsearch: true do
       condition :id, user_query: {query_name: :name, prefix: true}
       condition :name
       condition :tags
-      condition :age
+      condition :age, range: true
 
       condition :tag_ids, user_query: {query_name: :tags, prefix: true}
 
