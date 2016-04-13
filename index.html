@@ -195,16 +195,19 @@ search.metadata.pagination.current_page</pre></div>
   search.aggregations.first.buckets.inject({}) { |<span class="pl-smi">memo</span>, <span class="pl-smi">e</span>| memo.merge(e.key.downcase =&gt; e.count) }
   <span class="pl-c"># {'funny' =&gt; 2, 'smart' =&gt; 11}</span></pre></div>
 </li>
-<li><p>Select aggregations (query with this value):</p></li>
-</ul>
+<li>
+<p>Select aggregations (query with this value):</p>
 
 <div class="highlight highlight-source-ruby"><pre>  search.agg(<span class="pl-c1">tags:</span> [<span class="pl-s"><span class="pl-pds">'</span>stupid<span class="pl-pds">'</span></span>]).query!
   <span class="pl-c"># or</span>
   <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">aggregations:</span> [{<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>tags<span class="pl-pds">'</span></span>, <span class="pl-c1">buckets:</span> [{<span class="pl-c1">key:</span> <span class="pl-s"><span class="pl-pds">'</span>stupid<span class="pl-pds">'</span></span>, <span class="pl-c1">selected:</span> <span class="pl-c1">true</span>}] }])</pre></div>
 </li>
+</ul>
+</li>
 <li>
-<p>Options on class definition
-Any of the constructor options can apply at the class definition as well:</p>
+<p>Options on class definition</p>
+
+<p>Any of the constructor options can apply at the class definition as well:</p>
 
 <div class="highlight highlight-source-ruby"><pre>  <span class="pl-k">class</span> <span class="pl-en">PeopleSearch<span class="pl-e"> &lt; Trample::Search</span></span>
     condition <span class="pl-c1">:excluded_tags</span>, <span class="pl-c1">not:</span> <span class="pl-c1">true</span>
