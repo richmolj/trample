@@ -217,6 +217,44 @@ search.metadata.pagination.current_page</pre></div>
 </li>
 </ul>
 
+<h3>
+<a id="autocompletes" class="anchor" href="#autocompletes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Autocompletes</h3>
+
+<p>When autocompleting, you often want to display something to the user ('Bart') and query on something different (<code>id=1</code>). This way saved searches will yield the same results even when text changes over time.</p>
+
+<p>In order to accomplish this, we provide <code>Trample::Autocomplete::Formatter</code>. Here's how you'd use it with <a href="https://github.com/rails-api/active_model_serializers">active_model_serializers</a>:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">AutocompleteSerializer<span class="pl-e"> &lt; ActiveModel::Serializer</span></span>
+  attributes <span class="pl-c1">:results</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">results</span>
+    formatter <span class="pl-k">=</span> <span class="pl-c1">Trample</span>::<span class="pl-c1">Autocomplete</span>::<span class="pl-c1">Formatter</span>.<span class="pl-k">new</span>(instance_options[<span class="pl-c1">:format</span>])
+    results <span class="pl-k">=</span> formatter.format_all(object.results, <span class="pl-c1">user_query:</span> user_query.presence)
+    results
+  <span class="pl-k">end</span>
+
+  <span class="pl-k">private</span>
+
+  <span class="pl-k">def</span> <span class="pl-en">user_query</span>
+    instance_options[<span class="pl-c1">:user_query</span>]
+  <span class="pl-k">end</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>This will return results like:</p>
+
+<div class="highlight highlight-source-ruby"><pre>{
+  <span class="pl-c1">results:</span> [
+    {<span class="pl-c1">id:</span> <span class="pl-c1">1</span>, <span class="pl-c1">key:</span> <span class="pl-c1">1</span>, <span class="pl-c1">text:</span> <span class="pl-s"><span class="pl-pds">'</span>Bart<span class="pl-pds">'</span></span>}
+  ]
+}</pre></div>
+
+<p><strong>id</strong> is just a unique identifier, often equal to the <code>key</code>. <strong>key</strong> is what we want to actually query on underneath the hood. <strong>text</strong> is for display to the user. You can now configure your client-side to display 'Bart' but query the <code>id</code> condition with value <code>1</code>. See more in the <a href="http://richmolj.github.io/trample/#autocompletes">API section</a>.</p>
+
+<p>Finally, there's a convenience for performing autocompletion:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c"># requires searchkick's 'autocomplete' indexing option</span>
+search.condition(<span class="pl-c1">:name</span>).autocomplete(<span class="pl-s"><span class="pl-pds">'</span>ba<span class="pl-pds">'</span></span>)</pre></div>
+
 <h1>
 <a id="api-requests" class="anchor" href="#api-requests" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>API Requests</h1>
 
@@ -440,7 +478,7 @@ search.metadata.pagination.current_page</pre></div>
 <p><strong>NB</strong> Aggregations currently only supports <code>count</code> (facet) aggregations. In the future we will support <code>sum</code>s, <code>average</code>s, etc.</p>
 
 <h3>
-<a id="autocompletes" class="anchor" href="#autocompletes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Autocompletes</h3>
+<a id="autocompletes-1" class="anchor" href="#autocompletes-1" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Autocompletes</h3>
 
 <p>There are two parts to autocompletes. First, the typeahead - the user types "sim" in an autocomplete, sees "Simpson" an "Simmons", and selects "Simpson". Second, execute an actual search query based on the "Simpson" selection.</p>
 
