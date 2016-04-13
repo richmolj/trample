@@ -1,6 +1,6 @@
 {
   "name": "Trample",
   "tagline": "Easily query elasticsearch given a client-side payload",
-  "body": "## API Requests\r\n\r\nGiven rails.\r\n\r\n```ruby\r\n# PUT /search/people/:id\r\n\r\n{\r\n  data: {\r\n    attributes: {\r\n      conditions: {\r\n        { name: \"Bart\" }\r\n      }\r\n    }\r\n  }\r\n}\r\n```",
+  "body": "## API Requests\r\n\r\nThe following examples use the [JSON API Specification](http://jsonapi.org). YMMV.\r\n\r\n### Basic Search\r\n\r\n```ruby\r\n# PUT /people_search/:id\r\n\r\n{\r\n  data: {\r\n    attributes: {\r\n      conditions: {\r\n        { name: \"Bart\" }\r\n      }\r\n    }\r\n  }\r\n}\r\n```\r\n\r\n### Response\r\n\r\n```ruby\r\n{\r\n  data: {\r\n    id: '1dc9c145-80cb-4d39-801d-1189afe1ec8c',\r\n    type: 'people-searches',\r\n    attributes: {\r\n      conditions: {\r\n        { name: \"Bart\" }\r\n      }\r\n    },\r\n    relationships: {\r\n      results: {\r\n        data: [\r\n          { id: 123, type: 'people' }\r\n        ]\r\n      }\r\n    },\r\n    included: [\r\n      { id: 123, type: 'people', attributes: { name: 'Bart' } }\r\n    ]\r\n  }\r\n}\r\n```",
   "note": "Don't delete this file! It's used internally to help with page regeneration."
 }
