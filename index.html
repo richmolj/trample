@@ -46,10 +46,8 @@
   }
 }</pre></div>
 
-<h3>
-<a id="response" class="anchor" href="#response" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Response</h3>
-
-<div class="highlight highlight-source-ruby"><pre>{
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c"># Response</span>
+{
   <span class="pl-c1">data:</span> {
     <span class="pl-c1">id:</span> <span class="pl-s"><span class="pl-pds">'</span>1dc9c145-80cb-4d39-801d-1189afe1ec8c<span class="pl-pds">'</span></span>,
     <span class="pl-c1">type:</span> <span class="pl-s"><span class="pl-pds">'</span>people-searches<span class="pl-pds">'</span></span>,
@@ -73,6 +71,177 @@
     ]
   }
 }</pre></div>
+
+<h3>
+<a id="andor-queries" class="anchor" href="#andor-queries" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>And/Or Queries</h3>
+
+<p>Have your condition match the format <code>{ condition_name: { values: ['a', 'b'], and: true }</code>:</p>
+
+<div class="highlight highlight-source-ruby"><pre>{
+  <span class="pl-c1">data:</span> {
+    <span class="pl-c1">attributes:</span> {
+      <span class="pl-c1">conditions:</span> { <span class="pl-c1">name:</span> { <span class="pl-c1">values:</span> [<span class="pl-s"><span class="pl-pds">'</span>Bart<span class="pl-pds">'</span></span>, <span class="pl-s"><span class="pl-pds">'</span>Homer<span class="pl-pds">'</span></span>], <span class="pl-c1">and:</span> <span class="pl-c1">false</span> } }
+    }
+  }
+}</pre></div>
+
+<h3>
+<a id="not-queries" class="anchor" href="#not-queries" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>NOT Queries</h3>
+
+<p>Have your condition match the format <code>{ condition_name: { values: 'string or array', not: true }</code>:</p>
+
+<div class="highlight highlight-source-ruby"><pre>{
+  <span class="pl-c1">data:</span> {
+    <span class="pl-c1">attributes:</span> {
+      <span class="pl-c1">conditions:</span> { <span class="pl-c1">name:</span> { <span class="pl-c1">values:</span> <span class="pl-s"><span class="pl-pds">'</span>Bart<span class="pl-pds">'</span></span>, <span class="pl-c1">not:</span> <span class="pl-c1">true</span> } }
+    }
+  }
+}</pre></div>
+
+<h3>
+<a id="prefixpartial-matching" class="anchor" href="#prefixpartial-matching" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Prefix/Partial Matching</h3>
+
+<p>For prefix-matching, add <code>prefix: true</code> to the condition:</p>
+
+<div class="highlight highlight-source-ruby"><pre>{
+  <span class="pl-c1">data:</span> {
+    <span class="pl-c1">attributes:</span> {
+      <span class="pl-c1">conditions:</span> { <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">"</span>Ba<span class="pl-pds">"</span></span>, <span class="pl-c1">prefix:</span> <span class="pl-c1">true</span> }
+    }
+  }
+}</pre></div>
+
+<p>To match text anywhere within a word, add <code>any_text: true</code> to the condition:</p>
+
+<div class="highlight highlight-source-ruby"><pre>{
+  <span class="pl-c1">data:</span> {
+    <span class="pl-c1">attributes:</span> {
+      <span class="pl-c1">conditions:</span> { <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">"</span>ar<span class="pl-pds">"</span></span>, <span class="pl-c1">any_text:</span> <span class="pl-c1">true</span> } <span class="pl-k">//</span> <span class="pl-c1">Matches</span> <span class="pl-s"><span class="pl-pds">'</span>Bart<span class="pl-pds">'</span></span>
+    }
+  }
+}</pre></div>
+
+<p><strong>NB</strong>: Prefix/Partial matching will only work for fields that have been indexed to support it.</p>
+
+<h3>
+<a id="keyword-multi-field-queries" class="anchor" href="#keyword-multi-field-queries" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Keyword (multi-field) Queries</h3>
+
+<p>Sometimes you want to supply some text and search across multiple fields - the subject AND the body of an email, for instance. You can do this <strong>server-side</strong> or <strong>client-side</strong>:</p>
+
+<p>Client-side has the advantage of flexibility. But it requires the client to know more about how things are indexed:</p>
+
+<div class="highlight highlight-source-ruby"><pre>{
+  <span class="pl-c1">data:</span> {
+    <span class="pl-c1">attributes:</span> {
+      <span class="pl-c1">conditions:</span> { <span class="pl-c1">keywords:</span> {<span class="pl-c1">values:</span> <span class="pl-s"><span class="pl-pds">'</span>foo<span class="pl-pds">'</span></span>, <span class="pl-c1">fields:</span> [<span class="pl-c1">:subject</span>, <span class="pl-c1">:body</span>] }
+    }
+  }
+}</pre></div>
+
+<p>Server-side has the "just works" advantage. The domain experts writing code will manage the <code>keywords</code> fields themselves, clients get out-of-the-box functionality:</p>
+
+<div class="highlight highlight-source-ruby"><pre>{
+  <span class="pl-c1">data:</span> {
+    <span class="pl-c1">attributes:</span> {
+      <span class="pl-c1">conditions:</span> { <span class="pl-c1">keywords:</span> <span class="pl-s"><span class="pl-pds">'</span>foo<span class="pl-pds">'</span></span> } <span class="pl-c"># up to the backend what fields this searches</span>
+    }
+  }
+}</pre></div>
+
+<h3>
+<a id="ranges" class="anchor" href="#ranges" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Ranges</h3>
+
+<p>Use <code>from/to</code> in your condition payload:</p>
+
+<div class="highlight highlight-source-ruby"><pre>{
+  <span class="pl-c1">data:</span> {
+    <span class="pl-c1">attributes:</span> {
+      <span class="pl-c1">conditions:</span> { <span class="pl-c1">age:</span> { <span class="pl-c1">from:</span> <span class="pl-c1">7</span>, <span class="pl-c1">to:</span> <span class="pl-c1">31</span> } }
+    }
+  }
+}</pre></div>
+
+<p>Or use <code>from_eq/to_eq</code> for <code>&gt;=/&lt;=</code> functionality:</p>
+
+<div class="highlight highlight-source-ruby"><pre>{
+  <span class="pl-c1">data:</span> {
+    <span class="pl-c1">attributes:</span> {
+      <span class="pl-c1">conditions:</span> { <span class="pl-c1">age:</span> { <span class="pl-c1">from_eq:</span> <span class="pl-c1">7</span>, <span class="pl-c1">to_eq:</span> <span class="pl-c1">31</span> } }
+    }
+  }
+}</pre></div>
+
+<h3>
+<a id="pagination" class="anchor" href="#pagination" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Pagination</h3>
+
+<p>Edit <code>metadata.pagination.current_page</code> and/or <code>metadata.pagination.per_page</code>:</p>
+
+<div class="highlight highlight-source-ruby"><pre>{
+  <span class="pl-c1">data:</span> {
+    <span class="pl-c1">attributes:</span> {
+      <span class="pl-c1">metadata:</span> {
+        <span class="pl-c1">pagination:</span> { <span class="pl-c1">current_page:</span> <span class="pl-c1">2</span>, <span class="pl-c1">per_page:</span> <span class="pl-c1">50</span> }
+      }
+    }
+  }
+}</pre></div>
+
+<h3>
+<a id="sorting" class="anchor" href="#sorting" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Sorting</h3>
+
+<p>Edit <code>metadata.sort</code> array. Valid values are <code>asc/desc</code>:</p>
+
+<div class="highlight highlight-source-ruby"><pre>{
+  <span class="pl-c1">data:</span> {
+    <span class="pl-c1">attributes:</span> {
+      <span class="pl-c1">metadata:</span> {
+        <span class="pl-c1">sort:</span> [{<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>desc<span class="pl-pds">'</span></span>}]
+      }
+    }
+  }
+}</pre></div>
+
+<h3>
+<a id="aggregations-facets" class="anchor" href="#aggregations-facets" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Aggregations (facets)</h3>
+
+<p>Specify the fields you want to aggregate on:</p>
+
+<div class="highlight highlight-source-ruby"><pre>{
+  <span class="pl-c1">data:</span> {
+    <span class="pl-c1">attributes:</span> {
+      <span class="pl-c1">aggregations:</span> [{<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>tags<span class="pl-pds">'</span></span>}]
+    }
+  }
+}</pre></div>
+
+<p>Aggregations will be returned in the response as 'buckets':</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c"># Response</span>
+{
+  <span class="pl-c1">data:</span> {
+    <span class="pl-c1">id:</span> <span class="pl-s"><span class="pl-pds">'</span>1dc9c145-80cb-4d39-801d-1189afe1ec8c<span class="pl-pds">'</span></span>,
+    <span class="pl-c1">type:</span> <span class="pl-s"><span class="pl-pds">'</span>people-searches<span class="pl-pds">'</span></span>,
+    <span class="pl-c1">attributes:</span> {
+      <span class="pl-c1">aggregations:</span> [
+        {
+          <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>tags<span class="pl-pds">'</span></span>,
+          <span class="pl-c1">label:</span> <span class="pl-s"><span class="pl-pds">'</span>Tags<span class="pl-pds">'</span></span>, <span class="pl-c"># defined server-side</span>
+          <span class="pl-c1">order:</span> <span class="pl-c1">0</span>, <span class="pl-c"># defined server-side</span>
+          <span class="pl-c1">buckets:</span> [
+            { <span class="pl-c1">count:</span> <span class="pl-c1">17</span>, <span class="pl-c1">key:</span> <span class="pl-s"><span class="pl-pds">'</span>funny<span class="pl-pds">'</span></span>, <span class="pl-c1">label:</span> <span class="pl-s"><span class="pl-pds">'</span>Funny<span class="pl-pds">'</span></span>, <span class="pl-c1">selected:</span> <span class="pl-c1">false</span> } <span class="pl-c"># From ES results</span>
+          ]
+        }
+      ]
+    }
+  }
+}</pre></div>
+
+<p>To "select" an agg...</p>
+
+<p><strong>NB</strong> Aggregations currently only supports <code>count</code> (facet) aggregations. In the future we will support <code>sum</code>s, <code>average</code>s, etc.</p>
+
+<h3>
+<a id="autocompletes" class="anchor" href="#autocompletes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Autocompletes</h3>
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/richmolj">richmolj</a></p>
