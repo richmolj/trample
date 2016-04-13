@@ -28,10 +28,196 @@
         </ul>
       </header>
       <section>
-        <h2>
-<a id="api-requests" class="anchor" href="#api-requests" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>API Requests</h2>
+        <h1>
+<a id="implementation" class="anchor" href="#implementation" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Implementation</h1>
 
-<p>The following examples use the <a href="http://jsonapi.org">JSON API Specification</a>. YMMV.</p>
+<p>Given a model set up with <a href="https://github.com/ankane/searchkick">searchkick</a>:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">Person<span class="pl-e"> &lt; ActiveRecord::Base</span></span>
+  searchkick
+<span class="pl-k">end</span>
+
+<span class="pl-c1">Person</span>.create!(<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Bart<span class="pl-pds">'</span></span>)
+<span class="pl-c1">Person</span>.create!(<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Homer<span class="pl-pds">'</span></span>)</pre></div>
+
+<p>Create a corresponding Trample model:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c"># app/models/people_search.rb</span>
+
+<span class="pl-k">class</span> <span class="pl-en">PeopleSearch<span class="pl-e"> &lt; Trample::Search</span></span>
+  model <span class="pl-c1">Person</span>
+
+  condition <span class="pl-c1">:name</span>, <span class="pl-c1">single:</span> <span class="pl-c1">true</span>
+  condition <span class="pl-c1">:tags</span>
+  condition <span class="pl-c1">:age</span>, <span class="pl-c1">range:</span> <span class="pl-c1">true</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>You can now query via <strong>direct assignment</strong>:</p>
+
+<div class="highlight highlight-source-ruby"><pre>search <span class="pl-k">=</span> <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>
+search.condition(<span class="pl-c1">:name</span>).eq(<span class="pl-s"><span class="pl-pds">'</span>Bart<span class="pl-pds">'</span></span>)
+search.query!
+search.results.first.name <span class="pl-c"># =&gt; 'Bart'</span>
+
+<span class="pl-c"># You can also chain queries</span>
+search
+  .condition(<span class="pl-c1">:name</span>).eq(<span class="pl-s"><span class="pl-pds">'</span>Bart<span class="pl-pds">'</span></span>)
+  .condition(<span class="pl-c1">:age</span>).gt(<span class="pl-c1">8</span>)
+  .condition(<span class="pl-c1">:tags</span>).<span class="pl-k">or</span>(<span class="pl-s"><span class="pl-pds">%w(</span>funny stupid<span class="pl-pds">)</span></span>)
+  .sort(<span class="pl-s"><span class="pl-pds">'</span>-age<span class="pl-pds">'</span></span>)
+  .paginate(<span class="pl-c1">number:</span> <span class="pl-c1">2</span>, <span class="pl-c1">size:</span> <span class="pl-c1">10</span>)</pre></div>
+
+<p>Or query by <strong>constructor</strong>:</p>
+
+<div class="highlight highlight-source-ruby"><pre>search <span class="pl-k">=</span> <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">conditions:</span> {<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Bart<span class="pl-pds">'</span></span>})
+search.query!
+search.results.first.name <span class="pl-c"># =&gt; 'Bart'</span></pre></div>
+
+<p>Constructor-style is particularly helpful for controllers accepting parameters. </p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">def</span> <span class="pl-en">update</span>
+  search <span class="pl-k">=</span> <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(params[<span class="pl-c1">:people_search</span>])
+  search.query!
+
+  render <span class="pl-c1">json:</span> search, <span class="pl-c1">include:</span> <span class="pl-c1">:results</span>
+<span class="pl-k">end</span></pre></div>
+
+<p>If you're using Ember, <a href="https://github.com/richmolj/ember-cli-advanced-search">ember-cli-advanced-search</a> makes generating Trample-compatible search requests easy. See <a href="http://richmolj.github.io/trample/#api-requests">API Requests</a> for more examination of request/response.</p>
+
+<h3>
+<a id="query-types" class="anchor" href="#query-types" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Query Types</h3>
+
+<ul>
+<li>
+<p>Equals</p>
+
+<div class="highlight highlight-source-ruby"><pre>  search.condition(<span class="pl-c1">:name</span>).eq(<span class="pl-s"><span class="pl-pds">'</span>Bart<span class="pl-pds">'</span></span>)
+  <span class="pl-c"># or</span>
+  <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">conditions:</span> {<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>Bart<span class="pl-pds">'</span></span>})</pre></div>
+</li>
+<li>
+<p>And/Or</p>
+
+<div class="highlight highlight-source-ruby"><pre>  search.condition(<span class="pl-c1">:tags</span>).<span class="pl-k">or</span>(<span class="pl-s"><span class="pl-pds">%w(</span>Bart Homer<span class="pl-pds">)</span></span>)
+  search.condition(<span class="pl-c1">:tags</span>).<span class="pl-k">and</span>(<span class="pl-s"><span class="pl-pds">%w(</span>Bart Homer<span class="pl-pds">)</span></span>)
+  <span class="pl-c"># or</span>
+  <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">conditions:</span> {<span class="pl-c1">tags:</span> {<span class="pl-c1">values:</span> <span class="pl-s"><span class="pl-pds">%w(</span>Bart Homer<span class="pl-pds">)</span></span>, <span class="pl-c1">and:</span> <span class="pl-c1">false</span>}})
+  <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">conditions:</span> {<span class="pl-c1">tags:</span> {<span class="pl-c1">values:</span> <span class="pl-s"><span class="pl-pds">%w(</span>Bart Homer<span class="pl-pds">)</span></span>, <span class="pl-c1">and:</span> <span class="pl-c1">true</span>}})</pre></div>
+</li>
+<li>
+<p>NOT</p>
+
+<div class="highlight highlight-source-ruby"><pre>  search.condition(<span class="pl-c1">:name</span>).<span class="pl-k">not</span>(<span class="pl-s"><span class="pl-pds">'</span>Bart<span class="pl-pds">'</span></span>)
+  <span class="pl-c"># or</span>
+  <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">conditions:</span> {<span class="pl-c1">name:</span> {<span class="pl-c1">values:</span> <span class="pl-s"><span class="pl-pds">'</span>Bart<span class="pl-pds">'</span></span>, <span class="pl-c1">not:</span> <span class="pl-c1">true</span>}})</pre></div>
+</li>
+<li>
+<p>Partial Match (any text)</p>
+
+<div class="highlight highlight-source-ruby"><pre>  <span class="pl-c"># This field must be configured with searchkick's 'text_middle'</span>
+  search.condition(<span class="pl-c1">:name</span>).any_text(<span class="pl-s"><span class="pl-pds">'</span>ar<span class="pl-pds">'</span></span>)
+  <span class="pl-c"># or</span>
+  <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">conditions:</span> {<span class="pl-c1">name:</span> {<span class="pl-c1">values:</span> <span class="pl-s"><span class="pl-pds">'</span>ar<span class="pl-pds">'</span></span>, <span class="pl-c1">any_text:</span> <span class="pl-c1">true</span>}})</pre></div>
+</li>
+<li>
+<p>Prefix Match</p>
+
+<div class="highlight highlight-source-ruby"><pre>  <span class="pl-c"># This field must be configured with searchkick's 'text_start'</span>
+  search.condition(<span class="pl-c1">:name</span>).starts_with(<span class="pl-s"><span class="pl-pds">'</span>Ba<span class="pl-pds">'</span></span>)
+  <span class="pl-c"># or</span>
+  <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">conditions:</span> {<span class="pl-c1">name:</span> {<span class="pl-c1">values:</span> <span class="pl-s"><span class="pl-pds">'</span>Ba<span class="pl-pds">'</span></span>, <span class="pl-c1">prefix:</span> <span class="pl-c1">true</span>}})</pre></div>
+</li>
+<li>
+<p>Keywords (multi-field)</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">PeopleSearch<span class="pl-e"> &lt; Trample::Search</span></span>
+  model <span class="pl-c1">Person</span>
+
+  condition <span class="pl-c1">:keywords</span>, <span class="pl-c1">fields:</span> [<span class="pl-c1">:name</span>, <span class="pl-c1">:description</span>]
+<span class="pl-k">end</span>
+
+<span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">conditions:</span> {<span class="pl-c1">keywords:</span> <span class="pl-s"><span class="pl-pds">'</span>Bart<span class="pl-pds">'</span></span>}) <span class="pl-c"># Searches across both name and description fields</span></pre></div>
+</li>
+<li>
+<p>Ranges</p>
+
+<div class="highlight highlight-source-ruby"><pre>  search.condition(<span class="pl-c1">:age</span>).gt(<span class="pl-c1">8</span>).lt(<span class="pl-c1">30</span>)
+  search.condition(<span class="pl-c1">:age</span>).gte(<span class="pl-c1">8</span>).lte(<span class="pl-c1">30</span>)
+  <span class="pl-c"># or</span>
+  <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">conditions:</span> {<span class="pl-c1">age:</span> {<span class="pl-c1">from:</span> <span class="pl-c1">8</span>, <span class="pl-c1">to:</span> <span class="pl-c1">30</span>}})
+  <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">conditions:</span> {<span class="pl-c1">age:</span> {<span class="pl-c1">from_eq:</span> <span class="pl-c1">8</span>, <span class="pl-c1">to_eq:</span> <span class="pl-c1">30</span>}})</pre></div>
+</li>
+<li>
+<p>Pagination</p>
+
+<div class="highlight highlight-source-ruby"><pre>  search.paginate(<span class="pl-c1">number:</span> <span class="pl-c1">2</span>, <span class="pl-c1">size:</span> <span class="pl-c1">10</span>)
+  <span class="pl-c"># or</span>
+  <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">metadata:</span> {<span class="pl-c1">pagination:</span> {<span class="pl-c1">current_page:</span> <span class="pl-c1">2</span>, <span class="pl-c1">per_page:</span> <span class="pl-c1">10</span>}})
+
+<span class="pl-c"># also</span>
+search.metadata.pagination.total
+search.metadata.pagination.per_page
+search.metadata.pagination.current_page</pre></div>
+</li>
+<li>
+<p>Sorting</p>
+
+<div class="highlight highlight-source-ruby"><pre>  search.sort(<span class="pl-c1">:age</span>) <span class="pl-c"># asc</span>
+  search.sort(<span class="pl-s"><span class="pl-pds">'</span>-age<span class="pl-pds">'</span></span>) <span class="pl-c"># desc</span>
+  <span class="pl-c"># or</span>
+  <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">metadata:</span> {<span class="pl-c1">sort:</span> [{<span class="pl-c1">age:</span> <span class="pl-s"><span class="pl-pds">'</span>asc<span class="pl-pds">'</span></span>}]})
+  <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">metadata:</span> {<span class="pl-c1">sort:</span> [{<span class="pl-c1">age:</span> <span class="pl-s"><span class="pl-pds">'</span>desc<span class="pl-pds">'</span></span>}]})</pre></div>
+</li>
+<li>
+<p>Profiling</p>
+
+<div class="highlight highlight-source-ruby"><pre>  search.query!
+  search.metadata.took <span class="pl-c"># milliseconds</span></pre></div>
+</li>
+<li>
+<p>Aggregations</p>
+
+<ul>
+<li>
+<p>Return aggregations:</p>
+
+<div class="highlight highlight-source-ruby"><pre>  <span class="pl-k">class</span> <span class="pl-en">PeopleSearch<span class="pl-e"> &lt; Trample::Search</span></span>
+    model <span class="pl-c1">Person</span>
+    aggregation <span class="pl-c1">:tags</span>
+  <span class="pl-k">end</span>
+
+  search.agg(<span class="pl-c1">:tags</span>)
+  <span class="pl-c"># or</span>
+  <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">aggregations:</span> [{<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>tags<span class="pl-pds">'</span></span>}])
+
+  <span class="pl-c"># then</span>
+  search.query!
+  search.aggregations.first.buckets.inject({}) { |<span class="pl-smi">memo</span>, <span class="pl-smi">e</span>| memo.merge(e.key.downcase =&gt; e.count) }
+  <span class="pl-c"># {'funny' =&gt; 2, 'smart' =&gt; 11}</span></pre></div>
+</li>
+<li><p>Select aggregations (query with this value):</p></li>
+</ul>
+
+<div class="highlight highlight-source-ruby"><pre>  search.agg(<span class="pl-c1">tags:</span> [<span class="pl-s"><span class="pl-pds">'</span>stupid<span class="pl-pds">'</span></span>]).query!
+  <span class="pl-c"># or</span>
+  <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">aggregations:</span> [{<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>tags<span class="pl-pds">'</span></span>, <span class="pl-c1">buckets:</span> [{<span class="pl-c1">key:</span> <span class="pl-s"><span class="pl-pds">'</span>stupid<span class="pl-pds">'</span></span>, <span class="pl-c1">selected:</span> <span class="pl-c1">true</span>}] }])</pre></div>
+</li>
+<li>
+<p>Options on class definition
+Any of the constructor options can apply at the class definition as well:</p>
+
+<div class="highlight highlight-source-ruby"><pre>  <span class="pl-k">class</span> <span class="pl-en">PeopleSearch<span class="pl-e"> &lt; Trample::Search</span></span>
+    condition <span class="pl-c1">:excluded_tags</span>, <span class="pl-c1">not:</span> <span class="pl-c1">true</span>
+  <span class="pl-k">end</span>
+
+  <span class="pl-c1">PeopleSearch</span>.<span class="pl-k">new</span>(<span class="pl-c1">conditions:</span> {<span class="pl-c1">excluded_tags:</span> <span class="pl-s"><span class="pl-pds">%(</span>foo bar<span class="pl-pds">)</span></span>}) <span class="pl-c"># where tags NOT IN 'foo' or 'bar'</span></pre></div>
+</li>
+</ul>
+
+<h1>
+<a id="api-requests" class="anchor" href="#api-requests" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>API Requests</h1>
+
+<p>The following examples show API usage following the <a href="http://jsonapi.org">JSON API Specification</a>. Trample itself doesn't care what your API looks like, these are just 'best practice' examples for smooth sailing.</p>
 
 <h3>
 <a id="basic-search" class="anchor" href="#basic-search" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Basic Search</h3>
@@ -116,7 +302,7 @@
 <div class="highlight highlight-source-ruby"><pre>{
   <span class="pl-c1">data:</span> {
     <span class="pl-c1">attributes:</span> {
-      <span class="pl-c1">conditions:</span> { <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">"</span>ar<span class="pl-pds">"</span></span>, <span class="pl-c1">any_text:</span> <span class="pl-c1">true</span> } <span class="pl-k">//</span> <span class="pl-c1">Matches</span> <span class="pl-s"><span class="pl-pds">'</span>Bart<span class="pl-pds">'</span></span>
+      <span class="pl-c1">conditions:</span> { <span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">"</span>ar<span class="pl-pds">"</span></span>, <span class="pl-c1">any_text:</span> <span class="pl-c1">true</span> } <span class="pl-c"># Matches 'Bart'</span>
     }
   }
 }</pre></div>
