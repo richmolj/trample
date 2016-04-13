@@ -228,7 +228,8 @@
           <span class="pl-c1">label:</span> <span class="pl-s"><span class="pl-pds">'</span>Tags<span class="pl-pds">'</span></span>, <span class="pl-c"># defined server-side</span>
           <span class="pl-c1">order:</span> <span class="pl-c1">0</span>, <span class="pl-c"># defined server-side</span>
           <span class="pl-c1">buckets:</span> [
-            { <span class="pl-c1">count:</span> <span class="pl-c1">17</span>, <span class="pl-c1">key:</span> <span class="pl-s"><span class="pl-pds">'</span>funny<span class="pl-pds">'</span></span>, <span class="pl-c1">label:</span> <span class="pl-s"><span class="pl-pds">'</span>Funny<span class="pl-pds">'</span></span>, <span class="pl-c1">selected:</span> <span class="pl-c1">false</span> } <span class="pl-c"># From ES results</span>
+            { <span class="pl-c1">count:</span> <span class="pl-c1">17</span>, <span class="pl-c1">key:</span> <span class="pl-s"><span class="pl-pds">'</span>funny<span class="pl-pds">'</span></span>, <span class="pl-c1">label:</span> <span class="pl-s"><span class="pl-pds">'</span>Funny<span class="pl-pds">'</span></span>, <span class="pl-c1">selected:</span> <span class="pl-c1">false</span> }, <span class="pl-c"># From ES results</span>
+            { <span class="pl-c1">count:</span> <span class="pl-c1">8</span>, <span class="pl-c1">key:</span> <span class="pl-s"><span class="pl-pds">'</span>sad<span class="pl-pds">'</span></span>, <span class="pl-c1">label:</span> <span class="pl-s"><span class="pl-pds">'</span>Not Happy<span class="pl-pds">'</span></span>, <span class="pl-c1">selected:</span> <span class="pl-c1">false</span> }
           ]
         }
       ]
@@ -236,12 +237,70 @@
   }
 }</pre></div>
 
-<p>To "select" an agg...</p>
+<p>You can change the <code>selected</code> flag of an aggregation to filter results matching that entry:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c"># This will now only return results where 'tags' includes 'funny'</span>
+{
+  <span class="pl-c1">data:</span> {
+    <span class="pl-c1">attributes:</span> {
+      <span class="pl-c1">aggregations:</span> [{<span class="pl-c1">name:</span> <span class="pl-s"><span class="pl-pds">'</span>tags<span class="pl-pds">'</span></span>, <span class="pl-c1">buckets:</span> [{<span class="pl-c1">key:</span> <span class="pl-s"><span class="pl-pds">'</span>funny<span class="pl-pds">'</span></span>, <span class="pl-c1">selected:</span> <span class="pl-c1">true</span>}] }]
+    }
+  }
+}</pre></div>
 
 <p><strong>NB</strong> Aggregations currently only supports <code>count</code> (facet) aggregations. In the future we will support <code>sum</code>s, <code>average</code>s, etc.</p>
 
 <h3>
 <a id="autocompletes" class="anchor" href="#autocompletes" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Autocompletes</h3>
+
+<p>There are two parts to autocompletes. First, the typeahead - the user types "sim" in an autocomplete, sees "Simpson" an "Simmons", and selects "Simpson". Second, execute an actual search query based on the "Simpson" selection.</p>
+
+<p>For the typeahead, the request/response would look like:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">GET</span> <span class="pl-k">/</span>autocompletes<span class="pl-k">/</span>last_names?filter<span class="pl-k">=</span>sim<span class="pl-k">&amp;</span>per_page<span class="pl-k">=</span><span class="pl-c1">5</span>
+
+<span class="pl-c"># Response</span>
+{
+  <span class="pl-c1">results:</span> [
+    { <span class="pl-c1">id:</span> <span class="pl-c1">1</span>, <span class="pl-c1">key:</span> <span class="pl-c1">1</span>, <span class="pl-c1">text:</span> <span class="pl-s"><span class="pl-pds">'</span>Simpson<span class="pl-pds">'</span></span> },
+    { <span class="pl-c1">id:</span> <span class="pl-c1">2</span>, <span class="pl-c1">key:</span> <span class="pl-c1">2</span>, <span class="pl-c1">text:</span> <span class="pl-s"><span class="pl-pds">'</span>Simmons<span class="pl-pds">'</span></span> }
+  ]
+}</pre></div>
+
+<p>In this example, <strong>id</strong> is a unique identifier for the result (it will usually be the same as 'key', except for edge-cases where <code>key</code> is not unique). <strong>key</strong> is the actual value we'll query on - in this example we query on the ID of the associated record, <strong>not</strong> the string 'Simpson'. This way searches can be saved and replayed over time, giving the same results even if this person's last name changed from "Simpson" to "Barnes-Simpson". Finally, <strong>text</strong> is for display to the user.</p>
+
+<p>This means you likely want to query on the <code>key</code>, after the user has selected an option:</p>
+
+<div class="highlight highlight-source-ruby"><pre>{
+  <span class="pl-c1">data:</span> {
+    <span class="pl-c1">attributes:</span> {
+      <span class="pl-c1">conditions:</span> { <span class="pl-c1">person_id:</span> {<span class="pl-c1">values:</span> [{<span class="pl-c1">key:</span> <span class="pl-c1">1</span>}]} } <span class="pl-c"># Note we're querying the person_id condition</span>
+    }
+  }
+}</pre></div>
+
+<p>Finally, there are <strong>user queries</strong>. This is when the user types into an autocomplete but actually wants to search the text "sim" instead of selecting an autocomplete result. It's up to the backend developers if this is supported or not for a given search. When user queries are enabled, you'd see an extra <code>user_query</code> key in the results:</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-c1">GET</span> <span class="pl-k">/</span>autocompletes<span class="pl-k">/</span>last_names?filter<span class="pl-k">=</span>sim<span class="pl-k">&amp;</span>per_page<span class="pl-k">=</span><span class="pl-c1">5</span>
+
+<span class="pl-c"># Response</span>
+{
+  <span class="pl-c1">results:</span> [
+    { <span class="pl-c1">id:</span> <span class="pl-s"><span class="pl-pds">'</span>sim<span class="pl-pds">'</span></span>, <span class="pl-c1">key:</span> <span class="pl-s"><span class="pl-pds">'</span>sim<span class="pl-pds">'</span></span>, <span class="pl-c1">text:</span> <span class="pl-s"><span class="pl-pds">'</span>"sim"<span class="pl-pds">'</span></span>, <span class="pl-c1">user_query:</span> <span class="pl-c1">true</span>},
+    { <span class="pl-c1">id:</span> <span class="pl-c1">1</span>, <span class="pl-c1">key:</span> <span class="pl-c1">1</span>, <span class="pl-c1">text:</span> <span class="pl-s"><span class="pl-pds">'</span>Simpson<span class="pl-pds">'</span></span>, <span class="pl-c1">user_query:</span> <span class="pl-c1">false</span> },
+    { <span class="pl-c1">id:</span> <span class="pl-c1">2</span>, <span class="pl-c1">key:</span> <span class="pl-c1">2</span>, <span class="pl-c1">text:</span> <span class="pl-s"><span class="pl-pds">'</span>Simmons<span class="pl-pds">'</span></span>, <span class="pl-c1">user_query:</span> <span class="pl-c1">false</span> }
+  ]
+}</pre></div>
+
+<p>If the user selects this option, pass it along when querying - this makes sure we query a corresponding text field for this condition:</p>
+
+<div class="highlight highlight-source-ruby"><pre>{
+  <span class="pl-c1">data:</span> {
+    <span class="pl-c1">attributes:</span> {
+      <span class="pl-c1">conditions:</span> { <span class="pl-c1">person_id:</span> {<span class="pl-c1">values:</span> [{<span class="pl-c1">key:</span> <span class="pl-s"><span class="pl-pds">'</span>sim<span class="pl-pds">'</span></span>, <span class="pl-c1">user_query:</span> <span class="pl-c1">true</span>}]} } <span class="pl-c"># Note we're querying the person_id condition</span>
+    }
+  }
+}</pre></div>
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/richmolj">richmolj</a></p>
