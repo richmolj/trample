@@ -40,7 +40,7 @@ end
 
 class Person < ActiveRecord::Base
   searchkick text_start: [:name, :tags],
-    text_middle: [:name]
+    text_middle: [:name], autocomplete: [:name]
 
   serialize :tags
 end

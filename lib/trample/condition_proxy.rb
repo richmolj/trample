@@ -58,6 +58,10 @@ module Trample
       set(values: value)
     end
 
+    def autocomplete(value)
+      set(values: value, autocomplete: true)
+    end
+
     def starts_with(value)
       set(values: value, prefix: true)
     end

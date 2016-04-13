@@ -334,6 +334,13 @@ RSpec.describe "searching", elasticsearch: true do
     expect(search.results.map(&:name)).to eq([expected_name])
   end
 
+  it "should support query-as-you-type autocompletes via direct assignment" do
+    search = klass.new
+    search.condition(:name).autocomplete('ba')
+    search.query!
+    expect(search.results.map(&:name)).to eq(['Bart'])
+  end
+
   context "when an autocomplete condition" do
     it "should be able to query via constructor" do
       search = klass.new(conditions: {name: {values: [{id: 1, key: 'Homer', text: 'Just the Label, does not matter'}]}})

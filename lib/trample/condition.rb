@@ -10,6 +10,7 @@ module Trample
     attribute :not, Boolean
     attribute :prefix, Boolean, default: false
     attribute :any_text, Boolean, default: false
+    attribute :autocomplete, Boolean, default: false
     attribute :from_eq
     attribute :to_eq
     attribute :from
@@ -45,9 +46,10 @@ module Trample
 
     def runtime_query_name
       name = query_name
-      return "#{name}.text_start" if prefix?
-      return "#{name}.text_middle" if any_text?
-      return "#{name}.analyzed" if search_analyzed?
+      return "#{name}.text_start"   if prefix?
+      return "#{name}.text_middle"  if any_text?
+      return "#{name}.analyzed"     if search_analyzed?
+      return "#{name}.autocomplete" if autocomplete?
       name
     end
 
