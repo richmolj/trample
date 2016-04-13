@@ -429,7 +429,25 @@ RSpec.describe "searching", elasticsearch: true do
       expect(search.results.map(&:name)).to eq(['Homer'])
     end
 
-    context "that is limited by fields" do
+    context "that is limited by fields at runtime" do
+      before do
+        klass.class_eval do
+          condition :keywords
+        end
+      end
+
+      it "should limit the keyword query to those fields" do
+        search = klass.new(conditions: {keywords: {values: "homer", fields: [:tags]}})
+        search.query!
+        expect(search.results.length).to eq(0)
+
+        search = klass.new(conditions: {keywords: {values: "bald", fields: [:tags]}})
+        search.query!
+        expect(search.results.map(&:name)).to eq(['Homer'])
+      end
+    end
+
+    context "that is limited by fields on class definition" do
       before do
         klass.class_eval do
           condition :keywords, fields: [:tags]
@@ -506,6 +524,12 @@ RSpec.describe "searching", elasticsearch: true do
 
     it "should allow agg assignment via constructor (nil buckets)" do
       search = klass.new(aggregations: [{name: 'tags', buckets: nil}])
+      search.query!
+      expect(search.aggregations.map(&:name)).to match_array([:tags])
+    end
+
+    it "should allow agg assignment via constructor (no buckets key)" do
+      search = klass.new(aggregations: [{name: 'tags'}])
       search.query!
       expect(search.aggregations.map(&:name)).to match_array([:tags])
     end
