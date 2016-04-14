@@ -528,6 +528,17 @@ search.condition(<span class="pl-c1">:name</span>).autocomplete(<span class="pl-
     }
   }
 }</pre></div>
+
+<h1>
+<a id="swagger" class="anchor" href="#swagger" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Swagger</h1>
+
+<p>If you're using <a href="http://swagger.io">swagger</a> and <a href="https://github.com/fotinakis/swagger-blocks">swagger-blocks</a> with JSONAPI, there are helpers to auto-generate documentation (overall request/response, valid conditions, etc):</p>
+
+<div class="highlight highlight-source-ruby"><pre><span class="pl-k">class</span> <span class="pl-en">DocsController<span class="pl-e"> &lt; ApplicationController</span></span>
+  <span class="pl-c"># ... swagger-blocks code ...</span>
+  trample_swagger_schema
+  trample_swagger(<span class="pl-c1">PeopleSearch</span>, <span class="pl-s"><span class="pl-pds">"</span>/people_searches<span class="pl-pds">"</span></span>)
+<span class="pl-k">end</span></pre></div>
       </section>
       <footer>
         <p>This project is maintained by <a href="https://github.com/richmolj">richmolj</a></p>
