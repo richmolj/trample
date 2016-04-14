@@ -68,6 +68,20 @@ module Trample
     end
 
     def trample_swagger(search_class, path)
+      swagger_path "#{path}/new" do
+        operation :get do
+          key :description, "Instantiate default search. See the corresponding PUT operation for valid inputs."
+          key :tags, ['search']
+
+          response 200 do
+            key :description, 'Trample response'
+            schema do
+              key :'$ref', :TrampleSearchResponse
+            end
+          end
+        end
+      end
+
       swagger_path "#{path}/{id}" do
         operation :put do
           description = "<p>Trample search <a target='_blank' href='http://richmolj.github.io/trample'>View Full Trample Documentation</a></p><p><strong>Conditions:</strong></p><ul>"
@@ -79,8 +93,8 @@ module Trample
           end
           description << "</ul>"
 
-          description << "<p><strong>Aggregations:</strong></p><ul>"
           if search_class._aggs.present?
+            description << "<p><strong>Aggregations:</strong></p><ul>"
             search_class._aggs.each_pair do |name, agg|
               description << "<li>#{name}</li>"
             end
