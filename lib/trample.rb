@@ -11,6 +11,8 @@ require "trample/backend/searchkick"
 require "trample/results"
 require "trample/errors"
 
+require "trample/swagger"
+
 require "trample/autocomplete/formatter"
 
 require "trample/railtie" if defined?(Rails)
