@@ -29,6 +29,18 @@ search.query!
 search.results
 ```
 
+## Install
+
+```bash
+$ gem install trample_search
+```
+
+or
+
+```ruby
+gem 'trample_search'
+```
+
 ## Usage
 
 Check out the complete [documentation](http://richmolj.github.io/trample), or see usage in the [specs](https://github.com/richmolj/trample/blob/master/spec/integration/search_spec.rb).
