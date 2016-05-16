@@ -69,6 +69,10 @@ module Trample
       ConditionProxy.new(name, self)
     end
 
+    def includes(includes)
+      self.metadata.records[:includes] = includes
+    end
+
     # todo refactor...
     def agg(*names_or_payloads)
       names_or_payloads.each do |name_or_payload|
@@ -130,16 +134,36 @@ module Trample
     end
 
     def query!
+      @records = nil
       hash = backend.query!(conditions, aggregations)
       self.metadata.took = hash[:took]
       self.metadata.pagination.total = hash[:total]
       self.results = hash[:results]
-      self.results
+      if !!metadata.records[:load]
+        records!
+      else
+        self.results
+      end
     end
 
     # Todo only works for single-model search atm
+    # N.B. preserves sorting
     def records
-      self.class._models.first.where(id: results.map(&:_id))
+      @records ||= begin
+                     queried = self.class._models.first.where(id: results.map(&:_id))
+                     queried = queried.includes(metadata.records[:includes])
+                     [].tap do |sorted|
+                       results.each do |result|
+                         model = queried.find { |m| m.id.to_s == result.id.to_s }
+                         sorted << model
+                       end
+                     end
+                   end
+    end
+
+    def records!
+      @records = nil
+      records
     end
 
     private

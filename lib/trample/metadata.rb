@@ -18,6 +18,14 @@ module Trample
       attribute :dir, String
     end
 
+    class Records
+      include Virtus.model
+
+      attribute :load, Boolean, default: false
+      attribute :includes, Hash, default: {}
+    end
+
+    attribute :records, Records, default: ->(_,_) { Records.new }
     attribute :pagination, Pagination, default: ->(_,_) { Pagination.new }
     attribute :took, Integer
     attribute :sort, Array[Sort]

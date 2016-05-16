@@ -34,6 +34,7 @@ ActiveRecord::Schema.define(:version => 1) do
   end
 
   create_table :animals do |t|
+    t.integer :person_id
     t.string :name
   end
 end
@@ -43,10 +44,14 @@ class Person < ActiveRecord::Base
     text_middle: [:name], autocomplete: [:name]
 
   serialize :tags
+
+  has_many :animals
 end
 
 class Animal < ActiveRecord::Base
   searchkick text_start: [:name]
+
+  belongs_to :person
 end
 
 Searchkick.disable_callbacks

@@ -341,6 +341,35 @@ RSpec.describe "searching", elasticsearch: true do
     expect(search.results.map(&:name)).to eq(['Bart'])
   end
 
+  context "when loading records" do
+    let(:search) do
+      search = klass.new
+      search.metadata.records[:load] = true
+      search
+    end
+
+    it "should return ActiveRecords from #query!" do
+      search.query!
+      expect(search.query!.first).to be_a(ActiveRecord::Base)
+    end
+
+    it "should preserve sort order" do
+      search.query!
+      expect(search.records.map(&:id)).to eq(search.results.map(&:id))
+    end
+
+    it "should eager load requested includes" do
+      animal = Animal.create!(name: 'spot')
+      person = Person.first
+      person.animals << animal
+      search.metadata.records[:includes] = :animals
+      search.query!
+      [Person, Animal].each(&:delete_all)
+      record = search.records.find { |r| r.id == person.id }
+      expect(record.animals.first).to eq(animal)
+    end
+  end
+
   context "when an autocomplete condition" do
     it "should be able to query via constructor" do
       search = klass.new(conditions: {name: {values: [{id: 1, key: 'Homer', text: 'Just the Label, does not matter'}]}})
