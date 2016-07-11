@@ -19,6 +19,7 @@ module Trample
     attribute :range, Boolean, default: false
     attribute :fields, Array
     attribute :user_query, Hash
+    attribute :transform, Proc, default: ->(_,_) { ->(val) { val } }
 
     def initialize(attrs)
       attrs.merge!(single: true) if attrs[:name] == :keywords
@@ -190,14 +191,18 @@ module Trample
     end
 
     def to_range_query
+      _from_eq = transform.call(self.from_eq) if from_eq?
+      _to_eq   = transform.call(self.to_eq) if to_eq?
+      _from    = transform.call(self.from) if from?
+      _to      = transform.call(self.to) if to?
+
       hash = {}
-      hash.merge!(gte: from_eq) if from_eq?
-      hash.merge!(gt: from) if from?
-      hash.merge!(lte: to_eq) if to_eq?
-      hash.merge!(lt: to) if to?
+      hash.merge!(gte: _from_eq) if _from_eq
+      hash.merge!(gt: _from) if _from
+      hash.merge!(lte: _to_eq) if _to_eq
+      hash.merge!(lt: _to) if _to
 
-      {runtime_query_name => hash}
+      { runtime_query_name => hash }
     end
-
   end
 end

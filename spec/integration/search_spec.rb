@@ -217,6 +217,26 @@ RSpec.describe "searching", elasticsearch: true do
     expect(search.results.map(&:name)).to match_array(['Bart', 'Lisa'])
   end
 
+  it 'can apply a transform to range values' do
+    klass.class_eval do
+      condition :age, range: true, transform: ->(val) {
+        val.to_i + 2
+      }
+    end
+    search = klass.new
+    search.condition(:age).lt('11')
+    expect(search.conditions[:age].to_query).to eq(age: { lt: 13 })
+    search.conditions[:age] = nil
+    search.condition(:age).lte('11')
+    expect(search.conditions[:age].to_query).to eq(age: { lte: 13 })
+    search.conditions[:age] = nil
+    search.condition(:age).gte('11')
+    expect(search.conditions[:age].to_query).to eq(age: { gte: 13 })
+    search.conditions[:age] = nil
+    search.condition(:age).gt('11')
+    expect(search.conditions[:age].to_query).to eq(age: { gt: 13 })
+  end
+
   it "can query with two separate ranges on the same condition" do
     search = klass.new
     search.condition(:age).gt(8)

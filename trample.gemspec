@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'trample/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "trample"
+  spec.name          = "trample_search"
   spec.version       = Trample::VERSION
   spec.authors       = ["richmolj"]
   spec.email         = ["richmolj@gmail.com"]
