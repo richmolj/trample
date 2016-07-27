@@ -1,4 +1,4 @@
-source "http://artifactory.dev.bloomberg.com:8080/artifactory/api/gems/rubygems/"
+source 'https://rubygems.org'
 
 # Specify your gem's dependencies in trample.gemspec
 gemspec

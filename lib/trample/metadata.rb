@@ -9,6 +9,10 @@ module Trample
       attribute :total, Integer
       attribute :current_page, Integer, default: 1
       attribute :per_page, Integer, default: 20
+
+      def next?
+        (current_page * per_page) < total
+      end
     end
 
     class Sort

@@ -275,6 +275,41 @@ RSpec.describe "searching", elasticsearch: true do
 
     expect(search.results.map(&:name)).to match_array(['Marge'])
   end
+  describe "#find_in_batches" do
+    let(:search) { klass.new(metadata: {sort: [{att: 'name', dir: 'asc'}]}) }
+
+    context "when batch_size < total_results" do
+      it "should return results in array of given batch size" do
+        results = []
+        search.find_in_batches(batch_size: 2) { |r| results << r.map(&:name) }
+        expect(results).to match_array([['Bart', 'Homer'], ['Lisa', 'Marge']])
+      end
+    end
+
+    context "when batch_size == total_results" do
+      it "should return all results" do
+        results = []
+        search.find_in_batches(batch_size: 4) { |r| results << r.map(&:name) }
+        expect(results).to match_array([['Bart', 'Homer', 'Lisa', 'Marge']])
+      end
+    end
+
+    context "when batch_size > total_results" do
+      it "should return all results" do
+        results = []
+        search.find_in_batches(batch_size: 6) { |r| results << r.map(&:name) }
+        expect(results).to match_array([['Bart', 'Homer', 'Lisa', 'Marge']])
+      end
+    end
+
+    context "when no batch_size given" do
+      it "should return results with default batch_size=10_000" do
+        results = []
+        search.find_in_batches { |r| results << r.map(&:name) }
+        expect(results).to match_array([['Bart', 'Homer', 'Lisa', 'Marge']])
+      end
+    end
+  end
 
   it "should prefix via constructor correctly" do
     search = klass.new(conditions: {name: {values: 'ba', prefix: true}})
