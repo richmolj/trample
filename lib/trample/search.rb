@@ -166,6 +166,23 @@ module Trample
       records
     end
 
+    #This implementation is not using scroll and scan of elastic
+    #https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-scroll.html
+    #In future versions we hope to replace this with elastic in-built implementation
+    #
+    def find_in_batches(batch_size = 10_000)
+      page_number = 1
+
+      loop do
+        paginate(size: batch_size, number: page_number)
+        query!
+        yield results
+        offset = metadata.pagination.current_page * metadata.pagination.per_page
+        break unless  metadata.pagination.next?
+        page_number += 1
+      end
+    end
+
     private
 
     def deep_dup(o)
