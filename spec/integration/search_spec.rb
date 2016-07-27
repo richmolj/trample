@@ -281,7 +281,7 @@ RSpec.describe "searching", elasticsearch: true do
     context "when batch_size < total_results" do
       it "should return results in array of given batch size" do
         results = []
-        search.find_in_batches(2) { |r| results << r.map(&:name) }
+        search.find_in_batches(batch_size: 2) { |r| results << r.map(&:name) }
         expect(results).to match_array([['Bart', 'Homer'], ['Lisa', 'Marge']])
       end
     end
@@ -289,7 +289,7 @@ RSpec.describe "searching", elasticsearch: true do
     context "when batch_size == total_results" do
       it "should return all results" do
         results = []
-        search.find_in_batches(4) { |r| results << r.map(&:name) }
+        search.find_in_batches(batch_size: 4) { |r| results << r.map(&:name) }
         expect(results).to match_array([['Bart', 'Homer', 'Lisa', 'Marge']])
       end
     end
@@ -297,7 +297,7 @@ RSpec.describe "searching", elasticsearch: true do
     context "when batch_size > total_results" do
       it "should return all results" do
         results = []
-        search.find_in_batches(6) { |r| results << r.map(&:name) }
+        search.find_in_batches(batch_size: 6) { |r| results << r.map(&:name) }
         expect(results).to match_array([['Bart', 'Homer', 'Lisa', 'Marge']])
       end
     end

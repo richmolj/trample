@@ -170,7 +170,7 @@ module Trample
     #https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-scroll.html
     #In future versions we hope to replace this with elastic in-built implementation
     #
-    def find_in_batches(batch_size = 10_000)
+    def find_in_batches(batch_size: 10_000)
       page_number = 1
 
       loop do
