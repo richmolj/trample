@@ -33,6 +33,8 @@ module Trample
     attribute :pagination, Pagination, default: ->(_,_) { Pagination.new }
     attribute :took, Integer
     attribute :sort, Array[Sort]
+    attribute :scroll
+    attribute :scroll_id
 
     def_delegators :pagination, :total, :current_page, :per_page
     def_delegator :sort, :att, :sort_att

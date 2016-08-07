@@ -1,5 +1,19 @@
 require 'searchkick'
 
+#module ExtraParams
+  #def params
+    #params = super
+    ##params[:search_type] = @options[:search_type] if @options[:search_type]
+    #if true#@options[:scroll]
+      #params[:scroll] = '1m'
+      #params[:size] = 2
+    #end
+    #puts params.inspect
+    #params
+  #end
+#end
+#Searchkick::Query.send(:prepend, ExtraParams)
+
 module Trample
   module Backend
     class Searchkick
@@ -11,13 +25,47 @@ module Trample
 
       def query!(conditions, aggregations)
         query = build_query(conditions, aggregations, @metadata, @_models)
-        results = @_models.first.search(keywords(conditions), query)
+
+        query = ::Searchkick::Query.new(@_models.first, keywords(conditions), query)
+        params = query.params
+        params[:scroll] = '1m'
+        params[:size] = 2
+        resp = nil
+        # in the middle of a scroll
+        if @metadata.scroll_id
+          params = {}
+          params[:scroll_id] = @metadata.scroll_id
+          params[:scroll] = '1m'
+          resp = ::Searchkick.client.scroll(params)
+        else
+          resp = ::Searchkick.client.search(params)
+        end
+        #binding.pry
+        results = query.handle_response(resp)
+        #binding.pry
+
+        #results = @_models.first.search(keywords(conditions), query)
         parse_response_aggs!(results.aggs, aggregations) if results.response.has_key?('aggregations')
 
+        # gotta be same client
+
+        #if scroll_id = resp['_scroll_id']
+          #binding.pry
+          #r = ::Searchkick.client.scroll(scroll_id: scroll_id, scroll: '1m')
+
+
+          #if r['_scroll_id']
+            #r = ::Searchkick.client.scroll(scroll_id: scroll_id, scroll: '1m')
+
+          #end
+          #binding.pry
+        #end
+
         {
-          total:   results.total_count,
-          took:    results.response['took'],
-          results: results.results
+          total:     results.total_count,
+          took:      results.response['took'],
+          results:   results.results,
+          scroll_id: resp['_scroll_id']
         }
       end
 

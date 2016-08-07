@@ -137,6 +137,7 @@ module Trample
       @records = nil
       hash = backend.query!(conditions, aggregations)
       self.metadata.took = hash[:took]
+      self.metadata.scroll_id = hash[:scroll_id]
       self.metadata.pagination.total = hash[:total]
       self.results = hash[:results]
       if !!metadata.records[:load]
@@ -171,16 +172,23 @@ module Trample
     #In future versions we hope to replace this with elastic in-built implementation
     #
     def find_in_batches(batch_size: 10_000)
-      page_number = 1
-
-      loop do
-        paginate(size: batch_size, number: page_number)
-        query!
-        yield results
-        offset = metadata.pagination.current_page * metadata.pagination.per_page
-        break unless  metadata.pagination.next?
-        page_number += 1
+      metadata.scroll = true
+      query!
+      #yield self.results
+      while !self.results.empty?
+        yield self.results
+        query! # scroll_id was updated
       end
+      metadata.scroll = false
+
+      #loop do
+        #paginate(size: batch_size, number: page_number)
+        #query!
+        #yield results
+        #offset = metadata.pagination.current_page * metadata.pagination.per_page
+        #break unless  metadata.pagination.next?
+        #page_number += 1
+      #end
     end
 
     private
