@@ -137,6 +137,7 @@ module Trample
       @records = nil
       hash = backend.query!(conditions, aggregations)
       self.metadata.took = hash[:took]
+      self.metadata.scroll_id = hash[:scroll_id]
       self.metadata.pagination.total = hash[:total]
       self.results = hash[:results]
       if !!metadata.records[:load]
@@ -166,21 +167,22 @@ module Trample
       records
     end
 
-    #This implementation is not using scroll and scan of elastic
-    #https://www.elastic.co/guide/en/elasticsearch/reference/current/search-request-scroll.html
-    #In future versions we hope to replace this with elastic in-built implementation
+    # Uses elasticsearch scroll, as ES will blow up > 10_000 results,
+    # even if you are paginating.
     #
+    # 1. Execute a search, telling ES we are scrolling
+    # 2. metadata.scroll_id is set on response
+    # 3. Use the scroll_id to fetch the next resultset
+    # 4. Repeat until results are exhausted
     def find_in_batches(batch_size: 10_000)
-      page_number = 1
-
-      loop do
-        paginate(size: batch_size, number: page_number)
+      metadata.scroll = true
+      metadata.pagination.per_page = batch_size
+      query!
+      while !self.results.empty?
+        yield self.results
         query!
-        yield results
-        offset = metadata.pagination.current_page * metadata.pagination.per_page
-        break unless  metadata.pagination.next?
-        page_number += 1
       end
+      self.metadata = Metadata.new
     end
 
     private

@@ -29,19 +29,15 @@ RSpec.describe "searching", elasticsearch: true do
   end
 
   it "records time the search took" do
-    results = double(response: {'took' => 2}).as_null_object
-    allow(Person).to receive(:search).and_return(results)
     search = klass.new
     search.query!
-    expect(search.metadata.took).to eq(2)
+    expect(search.metadata.took).to be_a(Integer)
   end
 
   it "records total entries" do
-    results = double(total_count: 12).as_null_object
-    allow(Person).to receive(:search).and_return(results)
     search = klass.new
     search.query!
-    expect(search.metadata.pagination.total).to eq(12)
+    expect(search.metadata.pagination.total).to eq(Person.count)
   end
 
   it "can query correctly when manually assigning" do
