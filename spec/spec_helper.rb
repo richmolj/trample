@@ -31,10 +31,15 @@ ActiveRecord::Schema.define(:version => 1) do
     t.string :name
     t.text :tags
     t.integer :age
+    t.integer :company_id
   end
 
   create_table :animals do |t|
     t.integer :person_id
+    t.string :name
+  end
+
+  create_table :companies do |t|
     t.string :name
   end
 end
@@ -46,12 +51,27 @@ class Person < ActiveRecord::Base
   serialize :tags
 
   has_many :animals
+  belongs_to :company
+
+  def search_data
+    attrs = self.attributes.clone
+
+    if company.present?
+      attrs.update(company_id: company.id, company_name: company.name)
+    end
+
+    attrs
+  end
 end
 
 class Animal < ActiveRecord::Base
   searchkick text_start: [:name]
 
   belongs_to :person
+end
+
+class Company < ActiveRecord::Base
+  has_many :people
 end
 
 Searchkick.disable_callbacks

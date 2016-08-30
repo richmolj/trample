@@ -23,7 +23,8 @@ module Trample
     end
 
     def self.condition(name, attrs = {})
-      attrs.merge!(name: name)
+      attrs.merge!(name: name, search_klass: self)
+
       @_conditions[name] = Condition.new(attrs)
     end
 
@@ -133,9 +134,12 @@ module Trample
       @backend ||= Backend::Searchkick.new(metadata, self.class._models)
     end
 
-    def query!
+    def query!(options = { lookup: true })
       @records = nil
       hash = backend.query!(conditions, aggregations)
+
+      load_autocompletes if options[:lookup]
+
       self.metadata.took = hash[:took]
       self.metadata.scroll_id = hash[:scroll_id]
       self.metadata.pagination.total = hash[:total]
@@ -191,5 +195,8 @@ module Trample
       Marshal.load(Marshal.dump(o))
     end
 
+    def load_autocompletes
+      self.conditions.values.each(&:lookup_autocomplete)
+    end
   end
 end
