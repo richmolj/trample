@@ -1,7 +1,6 @@
 module Trample
   class Condition
     include Virtus.model
-
     attribute :name, Symbol
     attribute :query_name, Symbol, default: :name
     attribute :values, Array
@@ -20,10 +19,30 @@ module Trample
     attribute :fields, Array
     attribute :user_query, Hash
     attribute :transform, Proc, default: ->(_,_) { ->(val) { val } }
+    attribute :search_klass
+    attribute :lookup, Hash
 
     def initialize(attrs)
       attrs.merge!(single: true) if attrs[:name] == :keywords
       super(attrs)
+    end
+
+    def lookup_autocomplete
+      if require_autocomplete_lookup?
+        options = (lookup || {}).dup
+        klass   = options.delete(:klass) || '::Trample::TextLookup'
+
+        options.assert_valid_keys(:key, :label)
+
+        options = options.merge({
+          search_klass: search_klass,
+          condition_name: name
+        })
+
+        lookup_instance = klass.to_s.constantize.new(options)
+
+        self.values = lookup_instance.load(values) 
+      end
     end
 
     def blank?
@@ -203,6 +222,11 @@ module Trample
       hash.merge!(lt: _to) if _to
 
       { runtime_query_name => hash }
+    end
+
+    def require_autocomplete_lookup?
+      (values.present? && values.first.is_a?(Hash)) && 
+        values.any? { |v| v[:text].blank? }
     end
   end
 end

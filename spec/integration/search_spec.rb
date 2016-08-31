@@ -1,6 +1,16 @@
 require 'spec_helper'
 
 RSpec.describe "searching", elasticsearch: true do
+  class MyLookup
+    include Virtus.model
+
+    def load(values)
+      values.map do | value |
+        value[:text] = "#{value[:key]} - test"
+        value
+      end
+    end
+  end
 
   let(:klass) do
     Class.new(Trample::Search) do
@@ -14,18 +24,57 @@ RSpec.describe "searching", elasticsearch: true do
       condition :_name_prefix, query_name: :name, prefix: true
 
       condition :simple_name, query_name: 'name', single: true
+      condition :company_ids, query_name: 'company_id', 
+                              lookup: { 
+                                key: :company_id, 
+                                label: :company_name 
+                              }
+      condition :company_custom_ids, query_name: 'company_id', 
+                              lookup: { 
+                                key: :company_id, 
+                                label: :company_name,
+                                klass: 'MyLookup'
+                               }
     end
   end
 
   before do
     Searchkick.client.indices.delete index: '_all'
-    Person.create!(name: 'Homer', tags: ['funny', 'stupid', 'bald'], age: 38)
-    Person.create!(name: 'Lisa', tags: ['funny', 'smart', 'kid'], age: 8)
-    Person.create!(name: 'Marge', tags: ['motherly'], age: 34)
-    Person.create!(name: 'Bart', tags: ['funny', 'stupid', 'kid'], age: 10)
+    foo = Company.create!(name: 'Foo Inc')
+    bar = Company.create!(name: 'Bar Inc')
+    apex = Company.create!(name: 'Apex Inc')
+    Person.create!(name: 'Homer', tags: ['funny', 'stupid', 'bald'], age: 38, company: foo)
+    Person.create!(name: 'Lisa', tags: ['funny', 'smart', 'kid'], age: 8, company: bar)
+    Person.create!(name: 'Marge', tags: ['motherly'], age: 34, company: foo)
+    Person.create!(name: 'Bart', tags: ['funny', 'stupid', 'kid'], age: 10, company: apex)
     Person.reindex
 
     klass.model(Person)
+  end
+
+  it "should fetch autocomplete labels by default" do
+    search = klass.new
+    search.condition(:company_ids).in([{key: Company.first.id.to_s}, { key: Company.last.id.to_s, text: Company.last.name  }])
+    search.query!
+
+    expect(search.conditions.as_json['company_ids'][:values]).to eq([{:key=>"1", :text=>"Foo Inc"}, {:key=>"3", :text=>"Apex Inc"}])
+  end
+
+  it "should not fetch autocomplete labels when lookup: false" do
+    search = klass.new
+    values = [{key: Company.first.id.to_s}, { key: Company.last.id.to_s, text: Company.last.name  }]
+    search.condition(:company_ids).in(values)
+    search.query!(lookup: false)
+
+    expect(search.conditions.as_json['company_ids'][:values]).to eq([{:key=>"1"}, {:key=>"3", :text=>"Apex Inc"}])
+  end
+
+  it "should fetch autocomplete labels using custom lookup_class" do
+    search = klass.new
+    search.condition(:company_custom_ids).in([{key: Company.first.id.to_s}, { key: Company.last.id.to_s, text: Company.last.name  }])
+    search.query!
+
+    expect(search.conditions.as_json['company_custom_ids'][:values]).to eq([{:key=>"1", :text=>"#{Company.first.id} - test"}, {:key=>"3", :text=> "#{Company.last.id} - test"}])
   end
 
   it "records time the search took" do
