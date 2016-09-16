@@ -77,8 +77,10 @@ end
 Searchkick.disable_callbacks
 
 # Avoid hitting same port as probably used for development.
+host = ENV['ELASTICSEARCH_HOST'] || 'localhost'
+host = ENV['ELASTICSEARCH_PORT'] || 9250
 config = {
-  hosts: [{host: 'localhost', port: 9250}],
+  hosts: [{host: host, port: port}],
   log: false
 }
 

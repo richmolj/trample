@@ -1,4 +1,6 @@
 language: ruby
 rvm:
-  - 2.0.0
+  - 2.3.0
+services:
+  - elasticsearch
 before_install: gem install bundler -v 1.10.6
