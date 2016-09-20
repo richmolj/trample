@@ -1,5 +1,7 @@
 # Trample
 
+[![Build Status](https://travis-ci.org/richmolj/trample.svg?branch=master)](https://travis-ci.org/richmolj/trample)
+
 Additional querying sugar for [searchkick](https://github.com/ankane/searchkick).
 
 ## Why Trample?
