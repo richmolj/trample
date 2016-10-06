@@ -8,7 +8,7 @@ module Trample
       @condition_class = condition.class
       @condition_config = condition.attributes.dup
       @search = search
-      @name = name
+      @name = name.to_sym
     end
 
     def or(values)

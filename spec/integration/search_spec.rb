@@ -24,14 +24,14 @@ RSpec.describe "searching", elasticsearch: true do
       condition :_name_prefix, query_name: :name, prefix: true
 
       condition :simple_name, query_name: 'name', single: true
-      condition :company_ids, query_name: 'company_id', 
-                              lookup: { 
-                                key: :company_id, 
-                                label: :company_name 
+      condition :company_ids, query_name: 'company_id',
+                              lookup: {
+                                key: :company_id,
+                                label: :company_name
                               }
-      condition :company_custom_ids, query_name: 'company_id', 
-                              lookup: { 
-                                key: :company_id, 
+      condition :company_custom_ids, query_name: 'company_id',
+                              lookup: {
+                                key: :company_id,
                                 label: :company_name,
                                 klass: 'MyLookup'
                                }
@@ -130,6 +130,13 @@ RSpec.describe "searching", elasticsearch: true do
 
   it "queries basic conditions correctly via constructor" do
     search = klass.new(conditions: {name: "Homer"})
+    search.query!
+
+    expect(search.results.length).to eq(1)
+  end
+
+  it "queries basic conditions correctly when constructor is stringified" do
+    search = klass.new('conditions' => { 'name' => 'Homer' })
     search.query!
 
     expect(search.results.length).to eq(1)
@@ -554,6 +561,18 @@ RSpec.describe "searching", elasticsearch: true do
       end
 
       search = klass.new(conditions: {keywords: "homer"})
+      search.query!
+      expect(search.results.map(&:name)).to eq(['Homer'])
+    end
+
+    # Supports when this comes in via parameters
+    it 'supports stringified keyword queries' do
+      klass.class_eval do
+        condition :keywords
+      end
+
+      search = klass.new
+      search.condition('keywords').eq('homer')
       search.query!
       expect(search.results.map(&:name)).to eq(['Homer'])
     end
