@@ -577,6 +577,32 @@ RSpec.describe "searching", elasticsearch: true do
       expect(search.results.map(&:name)).to eq(['Homer'])
     end
 
+    context 'when keywords nil' do
+      it 'silently drops' do
+        klass.class_eval do
+          condition :keywords
+        end
+
+        search = klass.new
+        search.condition('keywords').eq(nil)
+        search.query!
+        expect(search.results.length).to eq(4)
+      end
+    end
+
+    context 'when keywords empty string' do
+      it 'silently drops' do
+        klass.class_eval do
+          condition :keywords
+        end
+
+        search = klass.new
+        search.condition('keywords').eq('')
+        search.query!
+        expect(search.results.length).to eq(4)
+      end
+    end
+
     context "that is limited by fields at runtime" do
       before do
         klass.class_eval do

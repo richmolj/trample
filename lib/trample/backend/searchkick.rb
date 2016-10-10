@@ -60,7 +60,7 @@ module Trample
       end
 
       def keywords(conditions)
-        if conditions[:keywords] and conditions[:keywords].values.first != ''
+        if conditions[:keywords] and ![nil, ''].include?(conditions[:keywords].values.first)
           conditions[:keywords].values.first
         else
           '*'
