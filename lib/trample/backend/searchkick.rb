@@ -60,8 +60,10 @@ module Trample
       end
 
       def keywords(conditions)
-        if conditions[:keywords] and ![nil, ''].include?(conditions[:keywords].values.first)
-          conditions[:keywords].values.first
+        condition = conditions[:keywords]
+        value = condition.values.first if condition and condition.values
+        if ![nil, ''].include?(value)
+          value
         else
           '*'
         end
