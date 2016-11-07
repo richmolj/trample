@@ -67,11 +67,11 @@ module Trample
       end
     end
 
-    def trample_swagger(search_class, path)
+    def trample_swagger(search_class, path, opts = {})
       swagger_path "#{path}/new" do
         operation :get do
           key :description, "Instantiate default search. See the corresponding PUT operation for valid inputs."
-          key :tags, ['search']
+          key :tags, opts[:tags] || ['search']
 
           response 200 do
             key :description, 'Trample response'
@@ -102,7 +102,7 @@ module Trample
           end
 
           key :description, description
-          key :tags, ['search']
+          key :tags, opts[:tags] || ['search']
 
           parameter paramType: :path do
             key :name, :id
