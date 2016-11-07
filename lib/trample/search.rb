@@ -51,6 +51,16 @@ module Trample
       self
     end
 
+    def page(current_page)
+      metadata.pagination.current_page = current_page
+      self
+    end
+
+    def per(per_page)
+      metadata.pagination.per_page = per_page
+      self
+    end
+
     def sort(*fields)
       return self if fields.empty?
 

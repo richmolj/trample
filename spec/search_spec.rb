@@ -6,6 +6,8 @@ describe Trample::Search do
     Class.new(described_class)
   end
 
+  let(:instance) { klass.new }
+
   describe "inheritance" do
     let(:subklass) { Class.new(klass) }
 
@@ -37,4 +39,25 @@ describe Trample::Search do
     end
   end
 
+  describe '#page' do
+    subject { instance.page(2) }
+
+    it 'sets current page' do
+      subject
+      expect(instance.metadata.current_page).to eq(2)
+    end
+
+    it { is_expected.to be_a(klass) }
+  end
+
+  describe '#per' do
+    subject { instance.per(50) }
+
+    it 'sets per_page' do
+      subject
+      expect(instance.metadata.per_page).to eq(50)
+    end
+
+    it { is_expected.to be_a(klass) }
+  end
 end
